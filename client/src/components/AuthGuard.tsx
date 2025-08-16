@@ -32,39 +32,37 @@ export default function AuthGuard({
   }, []);
 
   useEffect(() => {
-    // Handle OAuth callback
+    // Handle OAuth callback - let backend handle token exchange
     const handleCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
       const storedState = sessionStorage.getItem('oauth_state');
-      const codeVerifier = sessionStorage.getItem('code_verifier');
 
-      if (code && state === storedState && codeVerifier) {
+      if (code && state === storedState) {
         setIsLoading(true);
         try {
-          // Exchange code for token
-          const tokenResponse = await fetch(`${config.issuer}/v1/token`, {
+          // Send the authorization code to backend for token exchange
+          const response = await fetch('/api/auth/callback', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
+              'Content-Type': 'application/json',
             },
-            body: new URLSearchParams({
-              grant_type: 'authorization_code',
-              client_id: config.clientId,
+            body: JSON.stringify({
               code,
-              redirect_uri: config.redirectUri,
-              code_verifier: codeVerifier,
+              state,
+              application,
+              redirectUri: config.redirectUri,
             }),
           });
 
-          if (!tokenResponse.ok) {
-            throw new Error('Token exchange failed');
+          if (!response.ok) {
+            throw new Error('Authentication failed');
           }
 
-          const tokens = await tokenResponse.json();
-          authService.setIdToken(tokens.id_token);
-          await authService.login(tokens.id_token, application);
+          const data = await response.json();
+          authService.setIdToken(data.idToken);
+          await authService.login(data.idToken, application);
 
           // Clean up
           sessionStorage.removeItem('oauth_state');

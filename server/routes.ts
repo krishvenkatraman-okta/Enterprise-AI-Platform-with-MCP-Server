@@ -12,6 +12,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await initializeDefaultData();
 
   // Auth routes
+  app.post("/api/auth/callback", async (req, res) => {
+    try {
+      const { code, state, application, redirectUri } = req.body;
+      
+      if (!code || !state || !application || !redirectUri) {
+        return res.status(400).json({ error: "Code, state, application, and redirectUri are required" });
+      }
+
+      // Get the appropriate client configuration
+      const clientConfig = application === 'inventory' 
+        ? oktaService.getInventoryClientConfig() 
+        : oktaService.getJarvisClientConfig();
+
+      // Exchange authorization code for tokens (server-side)
+      const tokenResponse = await fetch(`https://${clientConfig.domain}/oauth2/v1/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: clientConfig.clientId,
+          client_secret: application === 'inventory' 
+            ? process.env.INVENTORY_CLIENT_SECRET || "Ixvrzzgq2jZ4BCdbKXI9YxD0kTwEWpajWDWZcj2niXLJJIoBOjLKKePP4Qf1efDK"
+            : process.env.JARVIS_CLIENT_SECRET || "e6DQE5cSnD3qCYx6BpfBDLzNgZrI-wRobgrcpz4ylyKfBhv7ljkRZcrLuTk_Innt",
+          code,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error('Token exchange failed:', errorText);
+        return res.status(401).json({ error: 'Token exchange failed' });
+      }
+
+      const tokens = await tokenResponse.json();
+      
+      // Return the ID token to the frontend
+      res.json({
+        idToken: tokens.id_token,
+        success: true,
+      });
+    } catch (error) {
+      console.error('Callback error:', error);
+      res.status(500).json({ error: "Authentication callback failed" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { idToken, application } = req.body;

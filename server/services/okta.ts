@@ -9,7 +9,7 @@ interface OktaConfig {
 
 const oktaConfig: OktaConfig = {
   domain: "fcxdemo.okta.com",
-  orgAuthServer: "https://fcxdemo.okta.com",
+  orgAuthServer: "https://fcxdemo.okta.com/oauth2",
   inventoryClientId: "0oau8x7jn10yYmlhw697",
   inventoryClientSecret: process.env.INVENTORY_CLIENT_SECRET || "Ixvrzzgq2jZ4BCdbKXI9YxD0kTwEWpajWDWZcj2niXLJJIoBOjLKKePP4Qf1efDK",
   jarvisClientId: "0oau8wb0eiLgOCT1X697",

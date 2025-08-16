@@ -44,7 +44,7 @@ export default function AuthGuard({
         setIsLoading(true);
         try {
           // Exchange code for token
-          const tokenResponse = await fetch(`${config.issuer}/oauth2/v1/token`, {
+          const tokenResponse = await fetch(`${config.issuer}/v1/token`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',

@@ -192,5 +192,5 @@ export function buildAuthUrl(config: any, codeChallenge: string, state: string):
     state,
   });
 
-  return `${config.issuer}/oauth2/v1/authorize?${params.toString()}`;
+  return `${config.issuer}/v1/authorize?${params.toString()}`;
 }

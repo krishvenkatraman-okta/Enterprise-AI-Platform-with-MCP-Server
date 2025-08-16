@@ -161,6 +161,11 @@
   100% { transform: rotate(360deg); }
 }
 
+@keyframes spin-reverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
 @keyframes pulse-glow {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -176,6 +181,10 @@
 
 .animate-spin-slow {
   animation: spin-slow 3s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 4s linear infinite;
 }
 
 .animate-pulse-glow {

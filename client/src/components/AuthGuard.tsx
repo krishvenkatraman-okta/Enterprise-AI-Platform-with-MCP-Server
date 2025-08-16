@@ -114,8 +114,8 @@ export default function AuthGuard({
       dots: "bg-blue-600",
     },
     jarvis: {
-      bg: "bg-slate-800 border-amber-400",
-      gradient: "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-800",
+      bg: "bg-slate-900 border-amber-400/30",
+      gradient: "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900",
       iconBg: "bg-gradient-to-br from-amber-400 to-amber-500",
       accent: "text-amber-400",
       dots: "bg-amber-400",
@@ -125,8 +125,16 @@ export default function AuthGuard({
   const styles = themeClasses[theme];
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center z-50 ${theme === 'jarvis' ? 'bg-slate-900/90' : 'bg-black/50'}`}>
-      <Card className={`w-full max-w-md mx-4 animate-fade-in ${styles.bg} ${theme === 'jarvis' ? 'shadow-amber-400/20 shadow-2xl' : ''}`}>
+    <div className={`fixed inset-0 flex items-center justify-center z-50 ${theme === 'jarvis' ? 'bg-slate-900 overflow-hidden' : 'bg-black/50'}`}>
+      {/* Spinning wheel background for Jarvis */}
+      {theme === 'jarvis' && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-96 h-96 border-4 border-amber-400/20 rounded-full animate-spin-slow" />
+          <div className="absolute w-80 h-80 border-2 border-amber-400/10 rounded-full animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '4s' }} />
+          <div className="absolute w-64 h-64 border border-amber-400/5 rounded-full animate-spin-slow" style={{ animationDuration: '6s' }} />
+        </div>
+      )}
+      <Card className={`w-full max-w-md mx-4 animate-fade-in relative z-10 ${styles.bg} ${theme === 'jarvis' ? 'shadow-amber-400/20 shadow-2xl backdrop-blur-sm bg-slate-900/90' : ''}`}>
         <CardContent className="pt-6">
           <div className="text-center mb-6">
             <div className={`w-16 h-16 ${styles.iconBg} rounded-full flex items-center justify-center mx-auto mb-4 ${theme === 'jarvis' ? 'animate-pulse' : ''}`}>

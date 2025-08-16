@@ -246,7 +246,13 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="h-full flex flex-col relative overflow-hidden">
+      {/* Background spinning wheels */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-[800px] h-[800px] border-2 border-amber-400/10 rounded-full animate-spin-slow" />
+        <div className="absolute w-[600px] h-[600px] border border-amber-400/5 rounded-full animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
+        <div className="absolute w-[400px] h-[400px] border border-amber-400/3 rounded-full animate-spin-slow" style={{ animationDuration: '12s' }} />
+      </div>
       {/* Header */}
       <div className="bg-slate-800/90 backdrop-blur-sm shadow-xl border-b border-amber-400/30 p-6">
         <div className="flex items-center justify-between">

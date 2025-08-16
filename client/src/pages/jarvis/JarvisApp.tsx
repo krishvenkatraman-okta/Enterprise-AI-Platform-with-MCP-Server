@@ -32,7 +32,13 @@ export default function JarvisApp() {
       icon="fas fa-robot"
       theme="jarvis"
     >
-      <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        {/* Background spinning wheels */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-[1200px] h-[1200px] border-2 border-amber-400/5 rounded-full animate-spin-slow" />
+          <div className="absolute w-[900px] h-[900px] border border-amber-400/3 rounded-full animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '10s' }} />
+          <div className="absolute w-[600px] h-[600px] border border-amber-400/2 rounded-full animate-spin-slow" style={{ animationDuration: '15s' }} />
+        </div>
         {/* Navigation Header */}
         <nav className="bg-slate-800/90 backdrop-blur-sm shadow-xl border-b border-amber-400/30 sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -219,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             warehouse,
             items,
             totalItems: items.length,
-            lowStockItems: items.filter(item => item.quantity <= item.minStockLevel),
+            lowStockItems: items.filter(item => item.quantity <= (item.minStockLevel || 0)),
           };
         })
       );
@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         warehouse,
         items,
         totalItems: items.length,
-        lowStockItems: items.filter(item => item.quantity <= item.minStockLevel),
+        lowStockItems: items.filter(item => item.quantity <= (item.minStockLevel || 0)),
       });
     } catch (error) {
       console.error("Jarvis warehouse inventory error:", error);

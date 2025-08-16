@@ -46,11 +46,12 @@ export default function InventoryApp() {
 
   const { data: warehouses, isLoading: warehousesLoading } = useQuery<Warehouse[]>({
     queryKey: ["/api/warehouses"],
+    enabled: authState.isAuthenticated && authState.session?.application === 'inventory',
   });
 
   const { data: allInventory, isLoading: inventoryLoading } = useQuery<InventoryItem[]>({
     queryKey: ["/api/inventory", selectedWarehouse],
-    enabled: !!selectedWarehouse,
+    enabled: !!selectedWarehouse && authState.isAuthenticated && authState.session?.application === 'inventory',
   });
 
   // Calculate statistics

@@ -38,8 +38,9 @@ export default function AuthGuard({
       const code = urlParams.get('code');
       const state = urlParams.get('state');
       const storedState = sessionStorage.getItem('oauth_state');
+      const codeVerifier = sessionStorage.getItem('code_verifier');
 
-      if (code && state === storedState) {
+      if (code && state === storedState && codeVerifier) {
         setIsLoading(true);
         try {
           // Send the authorization code to backend for token exchange
@@ -53,6 +54,7 @@ export default function AuthGuard({
               state,
               application,
               redirectUri: config.redirectUri,
+              codeVerifier,
             }),
           });
 
@@ -68,10 +70,8 @@ export default function AuthGuard({
           sessionStorage.removeItem('oauth_state');
           sessionStorage.removeItem('code_verifier');
           
-          // Force state update and debug
-          const newAuthState = authService.getState();
-          console.log('Auth state after login:', newAuthState);
-          setAuthState(newAuthState);
+          // Force state update
+          setAuthState(authService.getState());
           
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (error) {
@@ -105,13 +105,6 @@ export default function AuthGuard({
 
   const isAppAuthenticated = authState.isAuthenticated && authState.session?.application === application;
   
-  // Debug authentication check
-  console.log('AuthGuard check:', { 
-    application, 
-    isAuthenticated: authState.isAuthenticated, 
-    sessionApp: authState.session?.application,
-    isAppAuthenticated 
-  });
 
   if (isAppAuthenticated) {
     return <>{children}</>;

@@ -14,10 +14,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/callback", async (req, res) => {
     try {
-      const { code, state, application, redirectUri } = req.body;
+      const { code, state, application, redirectUri, codeVerifier } = req.body;
       
-      if (!code || !state || !application || !redirectUri) {
-        return res.status(400).json({ error: "Code, state, application, and redirectUri are required" });
+      if (!code || !state || !application || !redirectUri || !codeVerifier) {
+        return res.status(400).json({ error: "Code, state, application, redirectUri, and codeVerifier are required" });
       }
 
       // Get the appropriate client configuration
@@ -39,6 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : process.env.JARVIS_CLIENT_SECRET || "e6DQE5cSnD3qCYx6BpfBDLzNgZrI-wRobgrcpz4ylyKfBhv7ljkRZcrLuTk_Innt",
           code,
           redirect_uri: redirectUri,
+          code_verifier: codeVerifier,
         }),
       });
 

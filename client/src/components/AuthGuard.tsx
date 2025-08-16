@@ -67,6 +67,12 @@ export default function AuthGuard({
           // Clean up
           sessionStorage.removeItem('oauth_state');
           sessionStorage.removeItem('code_verifier');
+          
+          // Force state update and debug
+          const newAuthState = authService.getState();
+          console.log('Auth state after login:', newAuthState);
+          setAuthState(newAuthState);
+          
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (error) {
           console.error('Authentication error:', error);
@@ -98,6 +104,14 @@ export default function AuthGuard({
   };
 
   const isAppAuthenticated = authState.isAuthenticated && authState.session?.application === application;
+  
+  // Debug authentication check
+  console.log('AuthGuard check:', { 
+    application, 
+    isAuthenticated: authState.isAuthenticated, 
+    sessionApp: authState.session?.application,
+    isAppAuthenticated 
+  });
 
   if (isAppAuthenticated) {
     return <>{children}</>;

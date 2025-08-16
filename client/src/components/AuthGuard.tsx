@@ -40,22 +40,27 @@ export default function AuthGuard({
       const storedState = sessionStorage.getItem('oauth_state');
       const codeVerifier = sessionStorage.getItem('code_verifier');
 
+      console.log('Callback debug:', { code, state, storedState, codeVerifier });
+      
       if (code && state === storedState && codeVerifier) {
         setIsLoading(true);
         try {
+          const requestBody = {
+            code,
+            state,
+            application,
+            redirectUri: config.redirectUri,
+            codeVerifier,
+          };
+          console.log('Sending callback request:', requestBody);
+          
           // Send the authorization code to backend for token exchange
           const response = await fetch('/api/auth/callback', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              code,
-              state,
-              application,
-              redirectUri: config.redirectUri,
-              codeVerifier,
-            }),
+            body: JSON.stringify(requestBody),
           });
 
           if (!response.ok) {

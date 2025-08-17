@@ -61,7 +61,7 @@ export class OktaService {
     console.log('Making token exchange request with body:', formData.toString());
     
     // Try with axios to match curl behavior more closely
-    const axios = require('axios');
+    const { default: axios } = await import('axios');
     console.log('Using axios for token exchange...');
     
     try {

@@ -4,7 +4,7 @@ import { authService } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Key, Clock, CheckCircle, XCircle } from "lucide-react";
+import { X, Key, Clock, CheckCircle, XCircle, Eye, EyeOff, Copy } from "lucide-react";
 
 interface TokenSidebarProps {
   isOpen: boolean;
@@ -31,11 +31,30 @@ interface SessionData {
 
 export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
   const authState = authService.getState();
+  const [revealedTokens, setRevealedTokens] = useState<Set<string>>(new Set());
   
   const { data: sessionData } = useQuery<SessionData>({
     queryKey: ["/api/auth/sessions"],
     enabled: authState.isAuthenticated,
   });
+
+  const toggleTokenReveal = (sessionId: string) => {
+    const newRevealed = new Set(revealedTokens);
+    if (newRevealed.has(sessionId)) {
+      newRevealed.delete(sessionId);
+    } else {
+      newRevealed.add(sessionId);
+    }
+    setRevealedTokens(newRevealed);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const getFullIdToken = () => {
+    return localStorage.getItem('atlas_id_token') || '';
+  };
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString("en-US", {
@@ -153,8 +172,35 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
                   </span>
                 </div>
                 <div className="bg-gray-100 p-2 rounded text-xs break-all font-mono">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600">ID Token:</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleTokenReveal(session.id)}
+                        className="h-6 w-6 p-0"
+                        data-testid={`button-reveal-token-${session.application}`}
+                      >
+                        {revealedTokens.has(session.id) ? (
+                          <EyeOff className="w-3 h-3" />
+                        ) : (
+                          <Eye className="w-3 h-3" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(revealedTokens.has(session.id) ? getFullIdToken() : session.idTokenPreview)}
+                        className="h-6 w-6 p-0"
+                        data-testid={`button-copy-token-${session.application}`}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
                   <span data-testid={`text-token-preview-${session.application}`}>
-                    {session.idTokenPreview}
+                    {revealedTokens.has(session.id) ? getFullIdToken() : session.idTokenPreview}
                   </span>
                 </div>
               </CardContent>

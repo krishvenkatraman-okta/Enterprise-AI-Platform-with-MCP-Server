@@ -83,11 +83,10 @@ export default function ChatInterface() {
     // Initialize with welcome message
     addMessage({
       type: 'jarvis',
-      content: `Good ${getTimeOfDay()}, ${authService.getState().user?.firstName}. I'm J.A.R.V.I.S, your AI assistant with secure access to Atlas Beverages inventory system. How can I assist you today?`,
+      content: `Good ${getTimeOfDay()}, ${authService.getState().user?.firstName}. I'm J.A.R.V.I.S, your AI assistant with enterprise access to Atlas Beverages inventory system. How can I assist you today?`,
     });
-
-    // Attempt cross-app authentication
-    tokenExchangeMutation.mutate();
+    
+    // Note: Token exchange will happen only when inventory data is requested
   }, []);
 
   useEffect(() => {

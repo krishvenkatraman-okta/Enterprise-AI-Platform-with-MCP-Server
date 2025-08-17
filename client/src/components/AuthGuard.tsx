@@ -124,33 +124,86 @@ export default function AuthGuard({
       dots: "bg-blue-600",
     },
     jarvis: {
-      bg: "bg-slate-900 border-amber-400/30",
-      gradient: "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900",
-      iconBg: "bg-gradient-to-br from-amber-400 to-amber-500",
-      accent: "text-amber-400",
-      dots: "bg-amber-400",
+      bg: "bg-slate-800/90 border-blue-400/30 backdrop-blur-sm",
+      gradient: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
+      iconBg: "bg-gradient-to-br from-blue-500 to-cyan-500",
+      accent: "text-blue-400",
+      dots: "bg-blue-400",
     },
   };
 
   const styles = themeClasses[theme];
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center z-50 ${theme === 'jarvis' ? 'bg-slate-900 overflow-hidden' : 'bg-black/50'}`}>
-      {/* Spinning wheel background for Jarvis */}
+    <div className={`fixed inset-0 flex items-center justify-center z-50 ${theme === 'jarvis' ? 'bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 overflow-hidden' : 'bg-black/50'}`}>
+      {/* Enhanced radial spinning background for Jarvis */}
       {theme === 'jarvis' && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-96 h-96 border-4 border-amber-400/20 rounded-full animate-spin-slow" />
-          <div className="absolute w-80 h-80 border-2 border-amber-400/10 rounded-full animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '4s' }} />
-          <div className="absolute w-64 h-64 border border-amber-400/5 rounded-full animate-spin-slow" style={{ animationDuration: '6s' }} />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+          {/* Outer ring with radial lines */}
+          <div className="relative w-96 h-96">
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '8s' }}>
+              {Array.from({ length: 24 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 bg-blue-400/30"
+                  style={{
+                    height: '48px',
+                    left: '50%',
+                    top: '0',
+                    transformOrigin: '50% 192px',
+                    transform: `translateX(-50%) rotate(${i * 15}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {/* Middle ring with shorter lines */}
+          <div className="absolute relative w-64 h-64">
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '6s', animationDirection: 'reverse' }}>
+              {Array.from({ length: 16 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 bg-blue-300/40"
+                  style={{
+                    height: '32px',
+                    left: '50%',
+                    top: '0',
+                    transformOrigin: '50% 128px',
+                    transform: `translateX(-50%) rotate(${i * 22.5}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {/* Inner ring with accent lines */}
+          <div className="absolute relative w-32 h-32">
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '4s' }}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`absolute w-1 ${i % 3 === 0 ? 'bg-cyan-400/60' : 'bg-blue-200/50'}`}
+                  style={{
+                    height: '20px',
+                    left: '50%',
+                    top: '0',
+                    transformOrigin: '50% 64px',
+                    transform: `translateX(-50%) rotate(${i * 45}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       )}
-      <Card className={`w-full max-w-md mx-4 animate-fade-in relative z-10 ${styles.bg} ${theme === 'jarvis' ? 'shadow-amber-400/20 shadow-2xl backdrop-blur-sm bg-slate-900/90' : ''}`}>
+      <Card className={`w-full max-w-md mx-4 animate-fade-in relative z-10 ${styles.bg} ${theme === 'jarvis' ? 'shadow-blue-400/20 shadow-2xl' : ''}`}>
         <CardContent className="pt-6">
           <div className="text-center mb-6">
-            <div className={`w-16 h-16 ${styles.iconBg} rounded-full flex items-center justify-center mx-auto mb-4 ${theme === 'jarvis' ? 'animate-pulse' : ''}`}>
+            <div className={`w-16 h-16 ${styles.iconBg} rounded-full flex items-center justify-center mx-auto mb-4 relative`}>
               <i className={`${icon} text-white text-2xl`} />
               {theme === 'jarvis' && (
-                <div className="absolute inset-0 w-16 h-16 border-2 border-amber-400 rounded-full animate-spin opacity-30" />
+                <div className="absolute inset-0 w-16 h-16 border-2 border-blue-400/50 rounded-full animate-spin" style={{ animationDuration: '2s' }} />
               )}
             </div>
             <h2 className={`text-2xl font-bold ${theme === 'jarvis' ? 'text-white' : 'text-gray-900'}`}>
@@ -162,30 +215,30 @@ export default function AuthGuard({
           <div className="space-y-4">
             {isLoading ? (
               <div className="text-center">
-                <p className={`text-sm mb-4 ${theme === 'jarvis' ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {theme === 'jarvis' ? 'Initializing secure neural link...' : 'Authenticating with enterprise identity provider...'}
+                <p className={`text-sm mb-4 ${theme === 'jarvis' ? 'text-blue-300' : 'text-gray-600'}`}>
+                  {theme === 'jarvis' ? 'Starting authentication...' : 'Authenticating with enterprise identity provider...'}
                 </p>
                 <div className="flex items-center justify-center space-x-2">
-                  <div className={`w-2 h-2 ${styles.dots} rounded-full animate-bounce`} />
-                  <div className={`w-2 h-2 ${styles.dots} rounded-full animate-bounce`} style={{ animationDelay: '0.1s' }} />
-                  <div className={`w-2 h-2 ${styles.dots} rounded-full animate-bounce`} style={{ animationDelay: '0.2s' }} />
+                  <div className={`w-3 h-3 ${styles.dots}/60 rounded-full`}>
+                    <div className={`w-full h-full ${styles.dots} rounded-full animate-ping`} />
+                  </div>
                 </div>
               </div>
             ) : (
               <Button 
                 onClick={handleLogin}
-                className={`w-full ${styles.gradient} font-medium hover:opacity-90 transition-opacity`}
+                className={`w-full ${styles.gradient} font-medium hover:opacity-90 transition-opacity shadow-lg`}
                 data-testid={`button-login-${application}`}
               >
-                {theme === 'jarvis' ? 'Initialize Jarvis AI' : `Continue to ${title}`}
+                {theme === 'jarvis' ? 'Sign in with Okta' : `Continue to ${title}`}
               </Button>
             )}
           </div>
           
-          <div className={`mt-6 text-center text-xs ${theme === 'jarvis' ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className={`mt-6 text-center text-xs ${theme === 'jarvis' ? 'text-blue-400/80' : 'text-gray-500'}`}>
             <p>Secured by Enterprise SSO</p>
             <p className="mt-1">
-              {theme === 'jarvis' ? 'Cross-App Access • Token Exchange' : 'PKCE • OpenID Connect'}
+              {theme === 'jarvis' ? 'Cross-Interface Access • Token Exchange' : 'PKCE • OpenID Connect'}
             </p>
           </div>
         </CardContent>

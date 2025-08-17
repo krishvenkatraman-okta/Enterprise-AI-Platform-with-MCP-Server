@@ -24,6 +24,8 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     const authHeader = req.headers.authorization;
     const sessionId = req.headers['x-session-id'] as string;
 
+    console.log('Auth debug:', { authHeader: authHeader ? 'present' : 'missing', sessionId: sessionId ? 'present' : 'missing' });
+
     if (!authHeader || !sessionId) {
       return res.status(401).json({ error: 'No authentication token or session provided' });
     }

@@ -33,12 +33,63 @@ export default function JarvisApp() {
       theme="jarvis"
     >
       <div className="h-full bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 relative overflow-hidden">
-        {/* Background constantly spinning wheels */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[1200px] h-[1200px] border-2 border-blue-400/20 rounded-full animate-spin" />
-          <div className="absolute w-[900px] h-[900px] border border-blue-400/15 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }} />
-          <div className="absolute w-[600px] h-[600px] border border-blue-400/10 rounded-full animate-spin" style={{ animationDuration: '3s' }} />
-          <div className="absolute w-[400px] h-[400px] border-2 border-blue-300/25 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+        {/* Enhanced spinning animation with radial lines */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+          {/* Outer ring with radial lines */}
+          <div className="relative w-96 h-96">
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '8s' }}>
+              {Array.from({ length: 24 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 bg-blue-400/30"
+                  style={{
+                    height: '48px',
+                    left: '50%',
+                    top: '0',
+                    transformOrigin: '50% 192px',
+                    transform: `translateX(-50%) rotate(${i * 15}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {/* Middle ring with shorter lines */}
+          <div className="absolute relative w-64 h-64">
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '6s', animationDirection: 'reverse' }}>
+              {Array.from({ length: 16 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 bg-blue-300/40"
+                  style={{
+                    height: '32px',
+                    left: '50%',
+                    top: '0',
+                    transformOrigin: '50% 128px',
+                    transform: `translateX(-50%) rotate(${i * 22.5}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {/* Inner ring with dots */}
+          <div className="absolute relative w-32 h-32">
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: '4s' }}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 bg-blue-200/60 rounded-full"
+                  style={{
+                    left: '50%',
+                    top: '0',
+                    transformOrigin: '50% 64px',
+                    transform: `translateX(-50%) rotate(${i * 45}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
         {/* Navigation Header */}
         <nav className="bg-blue-800/90 backdrop-blur-sm shadow-xl border-b border-blue-400/30 sticky top-0 z-30">

@@ -163,6 +163,16 @@ export default function ChatInterface() {
       } else if (lowerMessage.includes('texas') || lowerMessage.includes('california') || lowerMessage.includes('nevada')) {
         const state = lowerMessage.includes('texas') ? 'Texas' : 
                      lowerMessage.includes('california') ? 'California' : 'Nevada';
+        
+        if (!hasAccessToken) {
+          addMessage({
+            type: 'jarvis',
+            content: 'I need to establish cross-app access first. Let me authenticate with the inventory system...',
+          });
+          tokenExchangeMutation.mutate();
+          return;
+        }
+
         const warehouseData = inventoryData?.find(w => w.warehouse.state === state);
         
         if (warehouseData) {

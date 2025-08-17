@@ -126,6 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Perform token exchange
+      console.log('Using ID token for exchange (first 50 chars):', req.session!.idToken.substring(0, 50) + '...');
       const exchangeResult = await oktaService.exchangeJarvisToInventory(req.session!.idToken);
       
       // Log the token exchange

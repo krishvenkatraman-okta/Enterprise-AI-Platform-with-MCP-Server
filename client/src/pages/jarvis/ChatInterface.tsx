@@ -54,13 +54,16 @@ export default function ChatInterface() {
   const { data: inventoryData } = useQuery<InventoryData[]>({
     queryKey: ["/api/jarvis/inventory"],
     enabled: hasAccessToken,
-    onSuccess: (data) => {
-      // Check if there's a pending warehouse request to auto-display
+  });
+
+  // Auto-display warehouse data after inventory is fetched
+  useEffect(() => {
+    if (inventoryData) {
       const pendingRequest = localStorage.getItem('pending_warehouse_request');
-      if (pendingRequest && data) {
+      if (pendingRequest) {
         localStorage.removeItem('pending_warehouse_request');
         
-        const warehouseData = data.find(w => w.warehouse.state === pendingRequest);
+        const warehouseData = inventoryData.find(w => w.warehouse.state === pendingRequest);
         if (warehouseData) {
           setTimeout(() => {
             addMessage({
@@ -71,8 +74,8 @@ export default function ChatInterface() {
           }, 500);
         }
       }
-    },
-  });
+    }
+  }, [inventoryData]);
 
   const tokenExchangeMutation = useMutation({
     mutationFn: async () => {

@@ -161,6 +161,59 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
             </Card>
           )}
 
+          {/* ID Token */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">ID Token</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <span className="font-medium">Type:</span> 
+                <span className="ml-2">ID Token (OIDC)</span>
+              </div>
+              <div>
+                <span className="font-medium">Status:</span> 
+                <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800">
+                  {authState.user ? "Active" : "Missing"}
+                </Badge>
+              </div>
+              {getFullIdToken() && (
+                <div className="bg-gray-100 p-2 rounded text-xs break-all font-mono">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600">ID Token:</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleTokenReveal('id')}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-reveal-id-token"
+                      >
+                        {revealedTokens.has('id') ? (
+                          <EyeOff className="w-3 h-3" />
+                        ) : (
+                          <Eye className="w-3 h-3" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(getFullIdToken())}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-copy-id-token"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <span data-testid="text-id-token">
+                    {revealedTokens.has('id') ? getFullIdToken() : getFullIdToken().substring(0, 20) + '...'}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* JAG Token */}
           {hasJagToken && (
             <Card>

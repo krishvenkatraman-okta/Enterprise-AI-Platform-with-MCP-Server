@@ -27,6 +27,14 @@ export async function apiRequest(
     Object.assign(headers, getAuthHeaders());
   }
 
+  // For inventory requests, use application token if available
+  if (url.includes('/api/jarvis/inventory')) {
+    const appToken = localStorage.getItem('application_token');
+    if (appToken) {
+      headers['X-Application-Token'] = appToken;
+    }
+  }
+
   const res = await fetch(url, {
     method,
     headers,
@@ -51,7 +59,16 @@ export const getQueryFn: <T>(options: {
       Object.assign(headers, getAuthHeaders());
     }
 
-    const res = await fetch(queryKey.join("/") as string, {
+    // For inventory requests, use application token if available
+    const queryUrl = queryKey.join("/");
+    if (queryUrl.includes('/api/jarvis/inventory')) {
+      const appToken = localStorage.getItem('application_token');
+      if (appToken) {
+        headers['X-Application-Token'] = appToken;
+      }
+    }
+
+    const res = await fetch(queryUrl as string, {
       headers,
       credentials: "include",
     });

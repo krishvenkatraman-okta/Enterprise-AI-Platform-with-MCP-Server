@@ -38,7 +38,7 @@ export class OktaService {
   }
 
   async performTokenExchange(request: TokenExchangeRequest): Promise<TokenExchangeResponse> {
-    const tokenUrl = `https://${this.config.domain}/oauth2/v1/token`;
+    const tokenUrl = `https://${this.config.domain}/oauth2/default/v1/token`;
     
     const formData = new URLSearchParams({
       'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',

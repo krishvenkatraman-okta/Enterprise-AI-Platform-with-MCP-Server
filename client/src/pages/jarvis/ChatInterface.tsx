@@ -46,6 +46,7 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [hasAccessToken, setHasAccessToken] = useState(false);
+  const [jagToken, setJagToken] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -62,12 +63,16 @@ export default function ChatInterface() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setHasAccessToken(true);
+      setJagToken(data.jagToken);
+      // Store JAG token in localStorage for token display
+      localStorage.setItem('jag_token', data.jagToken);
       queryClient.invalidateQueries({ queryKey: ["/api/jarvis/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
       addMessage({
         type: 'system',
-        content: 'Cross-app authentication successful. I now have access to Atlas Beverages inventory system.',
+        content: `Cross-app authentication successful. JAG token obtained: ${data.issuedTokenType}. I now have access to Atlas Beverages inventory system.`,
       });
     },
     onError: (error) => {

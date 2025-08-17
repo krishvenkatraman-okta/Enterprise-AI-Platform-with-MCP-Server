@@ -32,21 +32,22 @@ export default function JarvisApp() {
       icon="fas fa-robot"
       theme="jarvis"
     >
-      <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-        {/* Background spinning wheels */}
+      <div className="h-full bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 relative overflow-hidden">
+        {/* Background constantly spinning wheels */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[1200px] h-[1200px] border-2 border-amber-400/5 rounded-full animate-spin-slow" />
-          <div className="absolute w-[900px] h-[900px] border border-amber-400/3 rounded-full animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '10s' }} />
-          <div className="absolute w-[600px] h-[600px] border border-amber-400/2 rounded-full animate-spin-slow" style={{ animationDuration: '15s' }} />
+          <div className="w-[1200px] h-[1200px] border-2 border-blue-400/20 rounded-full animate-spin" />
+          <div className="absolute w-[900px] h-[900px] border border-blue-400/15 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2s' }} />
+          <div className="absolute w-[600px] h-[600px] border border-blue-400/10 rounded-full animate-spin" style={{ animationDuration: '3s' }} />
+          <div className="absolute w-[400px] h-[400px] border-2 border-blue-300/25 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
         </div>
         {/* Navigation Header */}
-        <nav className="bg-slate-800/90 backdrop-blur-sm shadow-xl border-b border-amber-400/30 sticky top-0 z-30">
+        <nav className="bg-blue-800/90 backdrop-blur-sm shadow-xl border-b border-blue-400/30 sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-8">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <span className="text-slate-900 text-sm font-bold">J</span>
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white text-sm font-bold">J</span>
                   </div>
                   <h1 className="text-xl font-bold text-white" data-testid="text-app-title">
                     J.A.R.V.I.S
@@ -56,7 +57,7 @@ export default function JarvisApp() {
                   variant="ghost"
                   size="sm"
                   onClick={() => window.location.href = '/'}
-                  className="text-amber-400 hover:text-amber-300"
+                  className="text-blue-400 hover:text-blue-300"
                   data-testid="button-home"
                 >
                   <Home className="w-4 h-4 mr-2" />
@@ -68,7 +69,7 @@ export default function JarvisApp() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsTokenSidebarOpen(true)}
-                  className="text-amber-400 hover:text-amber-300"
+                  className="text-blue-400 hover:text-blue-300"
                   data-testid="button-toggle-tokens"
                 >
                   <Key className="w-4 h-4 mr-2" />
@@ -76,8 +77,8 @@ export default function JarvisApp() {
                 </Button>
                 {authState.user && (
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center">
-                      <span className="text-slate-900 text-sm font-medium" data-testid="text-user-initials">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium" data-testid="text-user-initials">
                         {getUserInitials()}
                       </span>
                     </div>
@@ -88,7 +89,7 @@ export default function JarvisApp() {
                       variant="ghost"
                       size="sm"
                       onClick={handleLogout}
-                      className="text-amber-400 hover:text-amber-300"
+                      className="text-blue-400 hover:text-blue-300"
                       data-testid="button-logout"
                     >
                       Logout

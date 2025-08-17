@@ -141,6 +141,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         jagToken: exchangeResult.access_token,
         expiresIn: exchangeResult.expires_in,
+        tokenType: exchangeResult.token_type,
+        issuedTokenType: exchangeResult.issued_token_type,
       });
     } catch (error) {
       console.error("Token exchange error:", error);

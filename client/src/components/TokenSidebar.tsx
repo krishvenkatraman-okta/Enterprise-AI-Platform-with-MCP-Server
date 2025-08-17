@@ -269,29 +269,31 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
 
 
 
-          {/* Status Information */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Token Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div>
-                <span className="font-medium">ID Token:</span> 
-                <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800">
-                  {authState.user ? "Present" : "Missing"}
-                </Badge>
-              </div>
-              <div>
-                <span className="font-medium">JAG Token:</span> 
-                <Badge variant="secondary" className={`ml-2 ${hasJagToken ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                  {hasJagToken ? "Present" : "Not obtained"}
-                </Badge>
-              </div>
-              <div className="text-xs text-gray-500 pt-2">
-                Use "Check California warehouse" to obtain JAG token for inventory access
-              </div>
-            </CardContent>
-          </Card>
+          {/* Token Status - Only show when both tokens exist */}
+          {hasJagToken && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Token Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div>
+                  <span className="font-medium">ID Token:</span> 
+                  <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800">
+                    Active
+                  </Badge>
+                </div>
+                <div>
+                  <span className="font-medium">JAG Token:</span> 
+                  <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
+                    Active
+                  </Badge>
+                </div>
+                <div className="text-xs text-gray-500 pt-2">
+                  Cross-app access enabled for inventory system
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
 
 

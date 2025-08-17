@@ -76,7 +76,7 @@ export class OktaService {
   async exchangeJarvisToInventory(idToken: string): Promise<TokenExchangeResponse> {
     return this.performTokenExchange({
       subjectToken: idToken,
-      audience: this.config.inventoryClientId, // Use inventory client ID as audience
+      audience: 'http://localhost:5001', // Inventory application audience
       clientId: this.config.jarvisClientId,
       clientSecret: this.config.jarvisClientSecret,
     });

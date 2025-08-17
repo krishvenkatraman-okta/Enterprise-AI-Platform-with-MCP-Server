@@ -58,6 +58,8 @@ export class OktaService {
       subjectTokenLength: request.subjectToken.length
     });
 
+    console.log('Making token exchange request with body:', formData.toString());
+    
     const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {

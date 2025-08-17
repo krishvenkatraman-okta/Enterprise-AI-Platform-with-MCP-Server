@@ -1,4 +1,4 @@
-import { apiRequest } from "./queryClient";
+import { apiRequest, setAuthHeadersGetter } from "./queryClient";
 
 export interface User {
   id: string;
@@ -30,6 +30,8 @@ export class AuthService {
 
   constructor() {
     this.loadStoredAuth();
+    // Register auth headers function with query client
+    setAuthHeadersGetter(() => this.getAuthHeaders());
   }
 
   subscribe(listener: (state: AuthState) => void): () => void {
@@ -86,6 +88,7 @@ export class AuthService {
       isAuthenticated: false,
     };
     localStorage.removeItem('atlas_auth');
+    localStorage.removeItem('atlas_id_token');
     this.notify();
   }
 
@@ -104,6 +107,9 @@ export class AuthService {
         isAuthenticated: true,
       };
 
+      // Store the ID token for API authentication
+      this.setIdToken(idToken);
+      
       this.storeAuth();
       this.notify();
     } catch (error) {

@@ -38,7 +38,7 @@ export class OktaService {
   }
 
   async performTokenExchange(request: TokenExchangeRequest): Promise<TokenExchangeResponse> {
-    const tokenUrl = `https://${this.config.domain}/oauth2/v1/token`;
+    const tokenUrl = `https://${this.config.domain}/oauth2/default/v1/token`;
     
     const formData = new URLSearchParams({
       'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
@@ -48,6 +48,12 @@ export class OktaService {
       'audience': request.audience,
       'client_id': request.clientId,
       'client_secret': request.clientSecret,
+    });
+
+    console.log('Token exchange request:', {
+      url: tokenUrl,
+      audience: request.audience,
+      clientId: request.clientId
     });
 
     const response = await fetch(tokenUrl, {
@@ -60,6 +66,7 @@ export class OktaService {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('Token exchange failed:', { status: response.status, error: errorText });
       throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
     }
 
@@ -69,7 +76,7 @@ export class OktaService {
   async exchangeJarvisToInventory(idToken: string): Promise<TokenExchangeResponse> {
     return this.performTokenExchange({
       subjectToken: idToken,
-      audience: 'http://localhost:5001', // Inventory application audience
+      audience: this.config.inventoryClientId, // Use inventory client ID as audience
       clientId: this.config.jarvisClientId,
       clientSecret: this.config.jarvisClientSecret,
     });

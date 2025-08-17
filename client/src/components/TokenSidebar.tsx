@@ -39,6 +39,11 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
     enabled: authState.isAuthenticated,
   });
 
+  // Get current session tokens only
+  const currentSession = sessionData?.sessions?.find(s => s.application === 'jarvis');
+  const jagToken = localStorage.getItem('jag_token') || '';
+  const hasJagToken = jagToken.length > 0;
+
   const toggleTokenReveal = (sessionId: string) => {
     const newRevealed = new Set(revealedTokens);
     if (newRevealed.has(sessionId)) {
@@ -157,7 +162,7 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
           )}
 
           {/* JAG Token */}
-          {getJagToken() && (
+          {hasJagToken && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">JAG Token (Cross-App)</CardTitle>
@@ -166,6 +171,12 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
                 <div>
                   <span className="font-medium">Type:</span> 
                   <span className="ml-2">urn:ietf:params:oauth:token-type:id-jag</span>
+                </div>
+                <div>
+                  <span className="font-medium">Access:</span> 
+                  <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
+                    Inventory System
+                  </Badge>
                 </div>
                 <div className="bg-gray-100 p-2 rounded text-xs break-all font-mono">
                   <div className="flex items-center justify-between mb-2">
@@ -205,99 +216,31 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
 
 
 
-          {/* Application Sessions */}
-          {sessionData?.sessions.map((session) => (
-            <Card key={session.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center justify-between">
-                  <span>{getAppDisplayName(session.application)}</span>
-                  {session.application === authState.session?.application && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                      Current
-                    </Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium">Token Type:</span> 
-                  <span className="ml-2">ID Token</span>
-                </div>
-                <div>
-                  <span className="font-medium">Issued:</span> 
-                  <span className="ml-2" data-testid={`text-token-issued-${session.application}`}>
-                    {formatTime(session.createdAt)}
-                  </span>
-                </div>
-                <div className="bg-gray-100 p-2 rounded text-xs break-all font-mono">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-600">ID Token:</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleTokenReveal(session.id)}
-                        className="h-6 w-6 p-0"
-                        data-testid={`button-reveal-token-${session.application}`}
-                      >
-                        {revealedTokens.has(session.id) ? (
-                          <EyeOff className="w-3 h-3" />
-                        ) : (
-                          <Eye className="w-3 h-3" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(revealedTokens.has(session.id) ? getFullIdToken() : session.idTokenPreview)}
-                        className="h-6 w-6 p-0"
-                        data-testid={`button-copy-token-${session.application}`}
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <span data-testid={`text-token-preview-${session.application}`}>
-                    {revealedTokens.has(session.id) ? getFullIdToken() : session.idTokenPreview}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {/* Status Information */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Token Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <span className="font-medium">ID Token:</span> 
+                <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800">
+                  {authState.user ? "Present" : "Missing"}
+                </Badge>
+              </div>
+              <div>
+                <span className="font-medium">JAG Token:</span> 
+                <Badge variant="secondary" className={`ml-2 ${hasJagToken ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                  {hasJagToken ? "Present" : "Not obtained"}
+                </Badge>
+              </div>
+              <div className="text-xs text-gray-500 pt-2">
+                Use "Check California warehouse" to obtain JAG token for inventory access
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Cross-App Access Log */}
-          {sessionData?.tokenExchangeHistory && sessionData.tokenExchangeHistory.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Cross-App Access Log</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {sessionData.tokenExchangeHistory.map((exchange) => (
-                  <div key={exchange.id} className="border-l-2 border-gray-200 pl-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span data-testid={`text-exchange-${exchange.id}`}>
-                        {getAppDisplayName(exchange.fromApp)} → {getAppDisplayName(exchange.toApp)}
-                      </span>
-                      {exchange.success ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-600" />
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Token exchange {exchange.success ? 'completed' : 'failed'} at {formatTime(exchange.createdAt)}
-                    </div>
-                    {!exchange.success && exchange.errorMessage && (
-                      <div className="text-xs text-red-600 mt-1">
-                        Error: {exchange.errorMessage}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Empty State */}
           {(!sessionData || sessionData.sessions.length === 0) && authState.isAuthenticated && (

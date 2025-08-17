@@ -54,6 +54,24 @@ export default function ChatInterface() {
   const { data: inventoryData } = useQuery<InventoryData[]>({
     queryKey: ["/api/jarvis/inventory"],
     enabled: hasAccessToken,
+    onSuccess: (data) => {
+      // Check if there's a pending warehouse request to auto-display
+      const pendingRequest = localStorage.getItem('pending_warehouse_request');
+      if (pendingRequest && data) {
+        localStorage.removeItem('pending_warehouse_request');
+        
+        const warehouseData = data.find(w => w.warehouse.state === pendingRequest);
+        if (warehouseData) {
+          setTimeout(() => {
+            addMessage({
+              type: 'jarvis',
+              content: `Here's the current inventory status for ${warehouseData.warehouse.name}:`,
+              inventoryData: [warehouseData],
+            });
+          }, 500);
+        }
+      }
+    },
   });
 
   const tokenExchangeMutation = useMutation({
@@ -73,7 +91,7 @@ export default function ChatInterface() {
       
       addMessage({
         type: 'system',
-        content: `Cross-app authentication successful. JAG token obtained (${data.issuedTokenType}). I now have access to Atlas Beverages inventory system.`,
+        content: `Cross-app authentication successful. JAG token obtained (${data.issuedTokenType}). Now fetching inventory data...`,
       });
     },
     onError: (error) => {
@@ -170,6 +188,8 @@ export default function ChatInterface() {
             type: 'jarvis',
             content: 'I need to establish cross-app access first. Let me authenticate with the inventory system...',
           });
+          // Store the requested state for auto-display after token exchange
+          localStorage.setItem('pending_warehouse_request', state);
           tokenExchangeMutation.mutate();
           return;
         }

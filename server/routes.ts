@@ -144,18 +144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "ID token expired, please re-authenticate" });
       }
       
-      // Before token exchange, let's log the exact curl command equivalent
-      console.log('\n=== EQUIVALENT CURL COMMAND ===');
-      console.log(`curl --location 'https://fcxdemo.okta.com/oauth2/v1/token' \\`);
-      console.log(`--header 'Content-Type: application/x-www-form-urlencoded' \\`);
-      console.log(`--data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \\`);
-      console.log(`--data-urlencode 'requested_token_type=urn:ietf:params:oauth:token-type:id-jag' \\`);
-      console.log(`--data-urlencode 'subject_token=${req.session!.idToken}' \\`);
-      console.log(`--data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \\`);
-      console.log(`--data-urlencode 'audience=http://localhost:5001' \\`);
-      console.log(`--data-urlencode 'client_id=0oau8wb0eiLgOCT1X697' \\`);
-      console.log(`--data-urlencode 'client_secret=e6DQE5cSnD3qCYx6BpfBDLzNgZrI-wRobgrcpz4ylyKfBhv7ljkRZcrLuTk_Innt'`);
-      console.log('=== END CURL COMMAND ===\n');
+      // Token exchange debugging (can be enabled when needed)
+      // console.log('=== Token Exchange Debug ===');
+      // console.log('ID token length:', req.session!.idToken.length);
       
       const exchangeResult = await oktaService.exchangeJarvisToInventory(req.session!.idToken);
       

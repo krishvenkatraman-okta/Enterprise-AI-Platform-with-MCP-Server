@@ -60,24 +60,41 @@ export class OktaService {
 
     console.log('Making token exchange request with body:', formData.toString());
     
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Enterprise-AI-Platform/1.0',
-        'Accept': '*/*',
-        'Cache-Control': 'no-cache'
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Token exchange failed:', { status: response.status, error: errorText });
-      throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
+    // Try with axios to match curl behavior more closely
+    const axios = require('axios');
+    console.log('Using axios for token exchange...');
+    
+    try {
+      const response = await axios.post(tokenUrl, formData.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        timeout: 10000
+      });
+      
+      console.log('Axios response status:', response.status);
+      return response.data;
+      
+    } catch (axiosError: any) {
+      console.error('Axios failed, trying fetch:', axiosError.response?.data || axiosError.message);
+      
+      // Fallback to fetch
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Fetch also failed:', { status: response.status, error: errorText });
+        throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
+      }
+      
+      return response.json();
     }
-
-    return response.json();
   }
 
   async exchangeJarvisToInventory(idToken: string): Promise<TokenExchangeResponse> {

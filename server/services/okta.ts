@@ -64,6 +64,9 @@ export class OktaService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Enterprise-AI-Platform/1.0',
+        'Accept': '*/*',
+        'Cache-Control': 'no-cache'
       },
       body: formData,
     });

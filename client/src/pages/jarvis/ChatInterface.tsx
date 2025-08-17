@@ -66,21 +66,14 @@ export default function ChatInterface() {
     onSuccess: (data) => {
       setHasAccessToken(true);
       setJagToken(data.jagToken);
-      // Store both JAG and application tokens
+      // Store JAG token for cross-app access
       localStorage.setItem('jag_token', data.jagToken);
-      if (data.applicationToken) {
-        localStorage.setItem('application_token', data.applicationToken);
-      }
       queryClient.invalidateQueries({ queryKey: ["/api/jarvis/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
       
-      const message = data.applicationToken 
-        ? `Cross-app authentication successful. JAG token obtained and exchanged for application token. I now have full access to Atlas Beverages inventory system.`
-        : `JAG token obtained: ${data.issuedTokenType}. ${data.inventoryExchangeError || 'Ready for inventory access.'}`;
-        
       addMessage({
         type: 'system',
-        content: message,
+        content: `Cross-app authentication successful. JAG token obtained (${data.issuedTokenType}). I now have access to Atlas Beverages inventory system.`,
       });
     },
     onError: (error) => {

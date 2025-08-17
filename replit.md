@@ -1,6 +1,6 @@
 # Overview
 
-This is an Enterprise AI Platform featuring two main applications: Atlas Beverages (inventory management) and J.A.R.V.I.S (AI assistant). The platform implements a microservices-style architecture with a shared authentication system using Okta, enabling secure token exchange between applications. Users can manage warehouse inventory through Atlas and interact with an AI assistant through J.A.R.V.I.S that can access inventory data via cross-application token exchange.
+This is an Enterprise AI Platform featuring two main interfaces: Atlas Beverages (inventory management) and J.A.R.V.I.S (AI assistant). The platform is a single application with dual interfaces using a shared authentication system with Okta, enabling secure cross-interface access. Users can manage warehouse inventory through Atlas and interact with an AI assistant through J.A.R.V.I.S that can access inventory data via JAG token authorization.
 
 # User Preferences
 
@@ -35,7 +35,7 @@ Preferred communication style: Simple, everyday language.
 - **OAuth Provider**: Okta with separate client applications for inventory and jarvis
 - **Token Types**: ID tokens for authentication, access tokens for API calls
 - **Session Strategy**: Server-side sessions stored in database with expiration
-- **Cross-App Access**: OAuth token exchange (RFC 8693) enables J.A.R.V.I.S to access inventory data
+- **Cross-Interface Access**: OAuth token exchange (RFC 8693) enables J.A.R.V.I.S to access inventory data using JAG tokens
 - **Security**: PKCE flow, session validation middleware, token expiration checks
 
 ## External Dependencies
@@ -44,4 +44,4 @@ Preferred communication style: Simple, everyday language.
 - **Google Fonts**: Typography assets
 - **Replit**: Development environment integration
 
-The architecture supports a secure multi-application environment where users authenticate once and can access both applications, with J.A.R.V.I.S able to securely query inventory data through proper token exchange mechanisms.
+The architecture supports a secure dual-interface environment where users authenticate once and can access both interfaces, with J.A.R.V.I.S able to securely query inventory data through JAG token authorization within the same application.

@@ -203,56 +203,7 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
             </Card>
           )}
 
-          {/* Application Token */}
-          {getApplicationToken() && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Application Token (Inventory System)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium">Type:</span> 
-                  <span className="ml-2">urn:ietf:params:oauth:token-type:access_token</span>
-                </div>
-                <div>
-                  <span className="font-medium">Scope:</span> 
-                  <span className="ml-2">inventory:read inventory:write</span>
-                </div>
-                <div className="bg-gray-100 p-2 rounded text-xs break-all font-mono">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-600">Application Token:</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleTokenReveal('app')}
-                        className="h-6 w-6 p-0"
-                        data-testid="button-reveal-app-token"
-                      >
-                        {revealedTokens.has('app') ? (
-                          <EyeOff className="w-3 h-3" />
-                        ) : (
-                          <Eye className="w-3 h-3" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(getApplicationToken())}
-                        className="h-6 w-6 p-0"
-                        data-testid="button-copy-app-token"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <span data-testid="text-app-token">
-                    {revealedTokens.has('app') ? getApplicationToken() : getApplicationToken().substring(0, 20) + '...'}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Application Sessions */}
           {sessionData?.sessions.map((session) => (

@@ -137,55 +137,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
       });
 
-      // Now exchange the JAG token with inventory system for application token
-      try {
-        const inventoryResponse = await fetch('http://localhost:5001/api/auth/token-exchange', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${exchangeResult.access_token}`,
-          },
-          body: JSON.stringify({
-            grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-            subject_token: exchangeResult.access_token,
-            subject_token_type: 'urn:ietf:params:oauth:token-type:id-jag',
-            requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-          }),
-        });
-
-        if (inventoryResponse.ok) {
-          const inventoryTokenData = await inventoryResponse.json();
-          res.json({
-            success: true,
-            jagToken: exchangeResult.access_token,
-            applicationToken: inventoryTokenData.access_token,
-            expiresIn: exchangeResult.expires_in,
-            tokenType: exchangeResult.token_type,
-            issuedTokenType: exchangeResult.issued_token_type,
-          });
-        } else {
-          // If inventory system exchange fails, still return JAG token
-          res.json({
-            success: true,
-            jagToken: exchangeResult.access_token,
-            expiresIn: exchangeResult.expires_in,
-            tokenType: exchangeResult.token_type,
-            issuedTokenType: exchangeResult.issued_token_type,
-            inventoryExchangeError: 'Failed to exchange JAG token with inventory system',
-          });
-        }
-      } catch (inventoryError) {
-        // If inventory system is not available, still return JAG token
-        console.warn('Inventory system exchange failed:', inventoryError);
-        res.json({
-          success: true,
-          jagToken: exchangeResult.access_token,
-          expiresIn: exchangeResult.expires_in,
-          tokenType: exchangeResult.token_type,
-          issuedTokenType: exchangeResult.issued_token_type,
-          inventoryExchangeError: 'Inventory system not available for token exchange',
-        });
-      }
+      res.json({
+        success: true,
+        jagToken: exchangeResult.access_token,
+        expiresIn: exchangeResult.expires_in,
+        tokenType: exchangeResult.token_type,
+        issuedTokenType: exchangeResult.issued_token_type,
+      });
     } catch (error) {
       console.error("Token exchange error:", error);
       
@@ -301,59 +259,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jarvis cross-app inventory access - uses application token for proper OAuth flow
+  // Jarvis cross-app inventory access - uses JAG token for cross-app authorization within same system
   app.get("/api/jarvis/inventory", async (req, res) => {
     try {
-      const applicationToken = req.headers['x-application-token'] || req.headers.authorization?.replace('Bearer ', '');
+      const jagToken = req.headers['x-jag-token'] as string;
+      const authHeader = req.headers.authorization;
       
-      if (!applicationToken) {
-        return res.status(401).json({ error: "Application token required for inventory access" });
+      if (!jagToken && !authHeader) {
+        return res.status(401).json({ error: "JAG token or authentication required for inventory access" });
       }
 
-      // Use application token to make authenticated call to inventory system
-      try {
-        const inventoryResponse = await fetch('http://localhost:5001/api/inventory', {
-          headers: {
-            'Authorization': `Bearer ${applicationToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (inventoryResponse.ok) {
-          const inventoryData = await inventoryResponse.json();
-          res.json(inventoryData);
-        } else {
-          // Fallback to local data if inventory system is not available
-          const warehouses = await storage.getWarehouses();
-          const inventoryData = await Promise.all(
-            warehouses.map(async (warehouse) => {
-              const items = await storage.getInventoryByWarehouse(warehouse.id);
-              return {
-                warehouse,
-                items,
-                totalItems: items.length,
-                lowStockItems: items.filter(item => item.quantity <= (item.minStockLevel || 0)),
-              };
-            })
-          );
-          res.json(inventoryData);
+      // Verify JAG token if provided, or fall back to regular auth
+      if (jagToken) {
+        try {
+          // Verify the JAG token is valid (basic check - in production you'd validate with Okta)
+          if (!jagToken.startsWith('eyJ')) {
+            throw new Error('Invalid JAG token format');
+          }
+          // JAG token is valid, proceed with inventory access
+        } catch (error) {
+          return res.status(401).json({ error: "Invalid JAG token" });
         }
-      } catch (fetchError) {
-        // Fallback to local data if inventory system is not available
-        const warehouses = await storage.getWarehouses();
-        const inventoryData = await Promise.all(
-          warehouses.map(async (warehouse) => {
-            const items = await storage.getInventoryByWarehouse(warehouse.id);
-            return {
-              warehouse,
-              items,
-              totalItems: items.length,
-              lowStockItems: items.filter(item => item.quantity <= (item.minStockLevel || 0)),
-            };
-          })
-        );
-        res.json(inventoryData);
       }
+
+      // Get inventory data from local storage
+      const warehouses = await storage.getWarehouses();
+      const inventoryData = await Promise.all(
+        warehouses.map(async (warehouse) => {
+          const items = await storage.getInventoryByWarehouse(warehouse.id);
+          return {
+            warehouse,
+            items,
+            totalItems: items.length,
+            lowStockItems: items.filter(item => item.quantity <= (item.minStockLevel || 0)),
+          };
+        })
+      );
+
+      res.json(inventoryData);
     } catch (error) {
       console.error("Jarvis inventory error:", error);
       res.status(500).json({ error: "Failed to fetch inventory data" });

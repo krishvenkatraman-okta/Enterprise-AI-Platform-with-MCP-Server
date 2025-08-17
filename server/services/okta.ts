@@ -53,7 +53,9 @@ export class OktaService {
     console.log('Token exchange request:', {
       url: tokenUrl,
       audience: request.audience,
-      clientId: request.clientId
+      clientId: request.clientId,
+      subjectTokenPreview: request.subjectToken.substring(0, 100) + '...',
+      subjectTokenLength: request.subjectToken.length
     });
 
     const response = await fetch(tokenUrl, {

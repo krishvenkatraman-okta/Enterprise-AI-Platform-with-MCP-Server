@@ -127,6 +127,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Perform token exchange
       console.log('Using ID token for exchange (first 50 chars):', req.session!.idToken.substring(0, 50) + '...');
+      
+      // Decode and check token expiration
+      const decodedToken = oktaService.decodeIdToken(req.session!.idToken);
+      const now = Math.floor(Date.now() / 1000);
+      console.log('Token details:', {
+        issued: new Date(decodedToken.iat * 1000).toISOString(),
+        expires: new Date(decodedToken.exp * 1000).toISOString(),
+        currentTime: new Date(now * 1000).toISOString(),
+        isExpired: now > decodedToken.exp,
+        audience: decodedToken.aud,
+        issuer: decodedToken.iss
+      });
+      
+      if (now > decodedToken.exp) {
+        return res.status(401).json({ error: "ID token expired, please re-authenticate" });
+      }
+      
       const exchangeResult = await oktaService.exchangeJarvisToInventory(req.session!.idToken);
       
       // Log the token exchange

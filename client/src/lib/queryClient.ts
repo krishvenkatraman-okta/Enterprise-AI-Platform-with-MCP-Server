@@ -27,11 +27,11 @@ export async function apiRequest(
     Object.assign(headers, getAuthHeaders());
   }
 
-  // For inventory requests, use JAG token if available
+  // For inventory requests, use application token if available
   if (url.includes('/api/jarvis/inventory')) {
-    const jagToken = localStorage.getItem('jag_token');
-    if (jagToken) {
-      headers['X-Jag-Token'] = jagToken;
+    const applicationToken = localStorage.getItem('application_token');
+    if (applicationToken) {
+      headers['X-App-Token'] = applicationToken;
     }
   }
 
@@ -59,12 +59,12 @@ export const getQueryFn: <T>(options: {
       Object.assign(headers, getAuthHeaders());
     }
 
-    // For inventory requests, use JAG token if available
+    // For inventory requests, use application token if available
     const queryUrl = queryKey.join("/");
     if (queryUrl.includes('/api/jarvis/inventory')) {
-      const jagToken = localStorage.getItem('jag_token');
-      if (jagToken) {
-        headers['X-Jag-Token'] = jagToken;
+      const applicationToken = localStorage.getItem('application_token');
+      if (applicationToken) {
+        headers['X-App-Token'] = applicationToken;
       }
     }
 

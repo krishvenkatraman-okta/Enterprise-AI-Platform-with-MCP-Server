@@ -39,10 +39,21 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
     enabled: authState.isAuthenticated,
   });
 
-  // Get current session tokens only
+  // Get current session tokens only - clear stale tokens on auth state change
+  useEffect(() => {
+    if (!authState.isAuthenticated) {
+      // Clear all tokens when logged out
+      localStorage.removeItem('jag_token');
+      localStorage.removeItem('application_token');
+      localStorage.removeItem('atlas_id_token');
+    }
+  }, [authState.isAuthenticated]);
+
   const currentSession = sessionData?.sessions?.find(s => s.application === 'jarvis');
   const jagToken = localStorage.getItem('jag_token') || '';
+  const applicationToken = localStorage.getItem('application_token') || '';
   const hasJagToken = jagToken.length > 0;
+  const hasApplicationToken = applicationToken.length > 0;
 
   const toggleTokenReveal = (sessionId: string) => {
     const newRevealed = new Set(revealedTokens);
@@ -214,11 +225,11 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
             </CardContent>
           </Card>
 
-          {/* JAG Token */}
+          {/* JAG Token - Only show after obtained */}
           {hasJagToken && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">JAG Token (Cross-App)</CardTitle>
+                <CardTitle className="text-sm">JAG Token (Okta Cross-App)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div>
@@ -226,9 +237,9 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
                   <span className="ml-2">urn:ietf:params:oauth:token-type:id-jag</span>
                 </div>
                 <div>
-                  <span className="font-medium">Access:</span> 
-                  <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
-                    Inventory System
+                  <span className="font-medium">Purpose:</span> 
+                  <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-800">
+                    Authorization to Inventory App
                   </Badge>
                 </div>
                 <div className="bg-gray-100 p-2 rounded text-xs break-all font-mono">
@@ -267,29 +278,97 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
             </Card>
           )}
 
-
-
-          {/* Token Status - Only show when both tokens exist */}
-          {hasJagToken && (
+          {/* Application Token - Only show after inventory app token exchange */}
+          {hasApplicationToken && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Token Status</CardTitle>
+                <CardTitle className="text-sm">Application Token</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div>
+                  <span className="font-medium">Type:</span> 
+                  <span className="ml-2">Inventory Access Token</span>
+                </div>
+                <div>
+                  <span className="font-medium">Access:</span> 
+                  <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
+                    Inventory Data Access
+                  </Badge>
+                </div>
+                <div className="bg-gray-100 p-2 rounded text-xs break-all font-mono">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600">App Token:</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleTokenReveal('app')}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-reveal-app-token"
+                      >
+                        {revealedTokens.has('app') ? (
+                          <EyeOff className="w-3 h-3" />
+                        ) : (
+                          <Eye className="w-3 h-3" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(getApplicationToken())}
+                        className="h-6 w-6 p-0"
+                        data-testid="button-copy-app-token"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <span data-testid="text-app-token">
+                    {revealedTokens.has('app') ? getApplicationToken() : getApplicationToken().substring(0, 20) + '...'}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+
+
+          {/* Token Flow Status - Only show when tokens are present */}
+          {(hasJagToken || hasApplicationToken) && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Token Flow Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div>
                   <span className="font-medium">ID Token:</span> 
                   <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800">
-                    Active
+                    ✓ Active
                   </Badge>
                 </div>
-                <div>
-                  <span className="font-medium">JAG Token:</span> 
-                  <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
-                    Active
-                  </Badge>
-                </div>
+                {hasJagToken && (
+                  <div>
+                    <span className="font-medium">JAG Token:</span> 
+                    <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-800">
+                      ✓ Obtained
+                    </Badge>
+                  </div>
+                )}
+                {hasApplicationToken && (
+                  <div>
+                    <span className="font-medium">App Token:</span> 
+                    <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
+                      ✓ Data Access
+                    </Badge>
+                  </div>
+                )}
                 <div className="text-xs text-gray-500 pt-2">
-                  Cross-app access enabled for inventory system
+                  {hasApplicationToken 
+                    ? "Complete token flow: ID → JAG → Inventory Access"
+                    : hasJagToken 
+                    ? "Token exchange in progress..."
+                    : "Ready for cross-app authentication"
+                  }
                 </div>
               </CardContent>
             </Card>

@@ -281,26 +281,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Jarvis cross-app inventory access - uses JAG token for cross-app authorization within same system
-  app.get("/api/jarvis/inventory", async (req, res) => {
+  // Inventory app token exchange endpoint
+  app.post('/api/inventory/token-exchange', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const jagToken = req.headers['x-jag-token'] as string;
-      const authHeader = req.headers.authorization;
+      const { jagToken } = req.body;
       
-      if (!jagToken && !authHeader) {
-        return res.status(401).json({ error: "JAG token or authentication required for inventory access" });
+      if (!jagToken) {
+        return res.status(400).json({ success: false, error: 'JAG token required' });
       }
 
-      // Verify JAG token if provided, or fall back to regular auth
-      if (jagToken) {
+      // Simulate inventory application token exchange
+      // In real implementation, this would validate the JAG token and issue an app-specific token
+      const applicationToken = `inv_app_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      
+      console.log(`Inventory app token exchange: JAG token → Application token`);
+      console.log(`JAG token preview: ${jagToken.substring(0, 50)}...`);
+      console.log(`Application token: ${applicationToken}`);
+
+      res.json({
+        success: true,
+        applicationToken: applicationToken,
+        tokenType: 'inventory_access_token',
+        expiresIn: 3600
+      });
+    } catch (error) {
+      console.error('Inventory token exchange error:', error);
+      res.status(500).json({ success: false, error: 'Token exchange failed' });
+    }
+  });
+
+  // Jarvis cross-app inventory access - now uses application token for data access
+  app.get("/api/jarvis/inventory", async (req, res) => {
+    try {
+      const applicationToken = req.headers['x-app-token'] as string;
+      const authHeader = req.headers.authorization;
+      
+      if (!applicationToken && !authHeader) {
+        return res.status(401).json({ error: "Application token or authentication required for inventory access" });
+      }
+
+      // Verify application token if provided, or fall back to regular auth
+      if (applicationToken) {
         try {
-          // Verify the JAG token is valid (basic check - in production you'd validate with Okta)
-          if (!jagToken.startsWith('eyJ')) {
-            throw new Error('Invalid JAG token format');
+          // Verify the application token is valid (basic check - in production you'd validate the token)
+          if (!applicationToken.startsWith('inv_app_')) {
+            throw new Error('Invalid application token format');
           }
-          // JAG token is valid, proceed with inventory access
+          console.log(`Using application token for inventory access: ${applicationToken.substring(0, 20)}...`);
         } catch (error) {
-          return res.status(401).json({ error: "Invalid JAG token" });
+          return res.status(401).json({ error: "Invalid application token" });
         }
       }
 

@@ -77,7 +77,8 @@ export default function ChatInterface() {
     }
   }, [inventoryData]);
 
-  const tokenExchangeMutation = useMutation({
+  // Step 1: Get JAG token from Okta
+  const jagTokenMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/auth/token-exchange', {
         targetApp: 'inventory'
@@ -85,22 +86,50 @@ export default function ChatInterface() {
       return response.json();
     },
     onSuccess: (data) => {
-      setHasAccessToken(true);
       setJagToken(data.jagToken);
-      // Store JAG token for cross-app access
       localStorage.setItem('jag_token', data.jagToken);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
+      
+      addMessage({
+        type: 'system',
+        content: `JAG token obtained from Okta. Now exchanging for inventory application token...`,
+      });
+      
+      // Immediately trigger application token exchange
+      setTimeout(() => appTokenMutation.mutate(data.jagToken), 500);
+    },
+    onError: (error) => {
+      toast({
+        title: "JAG Token Failed",
+        description: "Unable to obtain JAG token from Okta.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Step 2: Exchange JAG token for Application token with inventory app
+  const appTokenMutation = useMutation({
+    mutationFn: async (jagToken: string) => {
+      const response = await apiRequest('POST', '/api/inventory/token-exchange', {
+        jagToken: jagToken
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setHasAccessToken(true);
+      localStorage.setItem('application_token', data.applicationToken);
       queryClient.invalidateQueries({ queryKey: ["/api/jarvis/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
       
       addMessage({
         type: 'system',
-        content: `Cross-app authentication successful. JAG token obtained (${data.issuedTokenType}). Now fetching inventory data...`,
+        content: `Application token obtained. Cross-app authentication complete. Now fetching inventory data...`,
       });
     },
     onError: (error) => {
       toast({
-        title: "Authentication Failed",
-        description: "Unable to establish cross-app access to inventory system.",
+        title: "Application Token Failed",
+        description: "Unable to exchange JAG token for inventory access.",
         variant: "destructive",
       });
     },
@@ -165,7 +194,7 @@ export default function ChatInterface() {
             type: 'jarvis',
             content: 'I need to establish cross-app access first. Let me authenticate with the inventory system...',
           });
-          tokenExchangeMutation.mutate();
+          jagTokenMutation.mutate();
           return;
         }
 
@@ -193,7 +222,7 @@ export default function ChatInterface() {
           });
           // Store the requested state for auto-display after token exchange
           localStorage.setItem('pending_warehouse_request', state);
-          tokenExchangeMutation.mutate();
+          jagTokenMutation.mutate();
           return;
         }
 

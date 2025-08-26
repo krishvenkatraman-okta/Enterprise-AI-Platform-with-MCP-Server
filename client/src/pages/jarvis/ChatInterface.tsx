@@ -166,9 +166,10 @@ export default function ChatInterface() {
       });
     },
     onError: (error) => {
+      console.error('MCP Token Exchange Error:', error);
       toast({
         title: "MCP Token Exchange Failed",
-        description: "Unable to exchange JAG token via MCP server.",
+        description: error.message || "Unable to exchange JAG token via MCP server.",
         variant: "destructive",
       });
     },

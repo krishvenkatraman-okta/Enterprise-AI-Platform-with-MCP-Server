@@ -87,8 +87,15 @@ export class AuthService {
       session: null,
       isAuthenticated: false,
     };
+    
+    // Clear all tokens on logout
     localStorage.removeItem('atlas_auth');
     localStorage.removeItem('atlas_id_token');
+    localStorage.removeItem('jag_token');
+    localStorage.removeItem('application_token');
+    localStorage.removeItem('okta-token-storage');
+    localStorage.removeItem('okta-cache-storage');
+    
     this.notify();
   }
 

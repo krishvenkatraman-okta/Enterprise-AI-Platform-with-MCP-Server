@@ -339,6 +339,134 @@ app.get('/mcp/health', (req, res) => {
   });
 });
 
+// External LLM Direct Access Endpoint - Bypasses JAG tokens for external systems
+app.post('/mcp/external/inventory', async (req, res) => {
+  try {
+    // Parse Authorization header for Basic authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Client authentication required - use Basic auth with clientId:clientSecret'
+      });
+    }
+
+    // Decode Basic auth credentials
+    const base64Credentials = authHeader.replace('Basic ', '');
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    const [clientId, clientSecret] = credentials.split(':');
+
+    // Validate MCP client credentials
+    if (clientId !== MCP_AUTH_SERVER_CONFIG.clientId || clientSecret !== MCP_AUTH_SERVER_CONFIG.clientSecret) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Invalid client credentials'
+      });
+    }
+
+    const { query } = req.body;
+    
+    if (!query || !query.type) {
+      return res.status(400).json({
+        error: 'invalid_request',
+        error_description: 'Query object with type field is required'
+      });
+    }
+
+    console.log('=== MCP External LLM Access ===');
+    console.log(`Client: ${clientId}`);
+    console.log(`Query Type: ${query.type}`);
+    console.log(`Query Filters:`, query.filters);
+    console.log('===============================');
+
+    let responseData;
+
+    switch (query.type) {
+      case 'warehouse':
+        if (query.filters?.state) {
+          const warehouses = await storage.getWarehouses();
+          const warehouse = warehouses.find(w => w.state === query.filters?.state);
+          
+          if (warehouse) {
+            const items = await storage.getInventoryByWarehouse(warehouse.id);
+            responseData = {
+              warehouse,
+              items,
+              totalItems: items.length,
+              lowStockItems: items.filter(item => item.quantity <= (item.minStockLevel || 0)),
+            };
+          } else {
+            return res.status(404).json({ 
+              error: 'warehouse_not_found',
+              message: `No warehouse found for state: ${query.filters.state}` 
+            });
+          }
+        } else {
+          return res.status(400).json({ 
+            error: 'missing_filter',
+            message: 'State filter required for warehouse query' 
+          });
+        }
+        break;
+
+      case 'all_inventory':
+        const warehouses = await storage.getWarehouses();
+        responseData = await Promise.all(
+          warehouses.map(async (warehouse) => {
+            const items = await storage.getInventoryByWarehouse(warehouse.id);
+            return {
+              warehouse,
+              items,
+              totalItems: items.length,
+              lowStockItems: items.filter(item => item.quantity <= (item.minStockLevel || 0)),
+            };
+          })
+        );
+        break;
+
+      case 'low_stock':
+        const allWarehouses = await storage.getWarehouses();
+        const lowStockData = await Promise.all(
+          allWarehouses.map(async (warehouse) => {
+            const items = await storage.getInventoryByWarehouse(warehouse.id);
+            const lowStockItems = items.filter(item => item.quantity <= (item.minStockLevel || 0));
+            return {
+              warehouse: warehouse.name,
+              lowStockItems: lowStockItems.map(item => ({
+                ...item,
+                warehouseName: warehouse.name
+              }))
+            };
+          })
+        );
+        responseData = lowStockData.filter(w => w.lowStockItems.length > 0);
+        break;
+
+      default:
+        return res.status(400).json({ 
+          error: 'invalid_query_type',
+          message: 'Supported query types: warehouse, all_inventory, low_stock' 
+        });
+    }
+
+    res.json({
+      success: true,
+      queryType: query.type,
+      data: responseData,
+      timestamp: new Date().toISOString(),
+      source: 'mcp-external-api',
+      client: clientId
+    });
+
+  } catch (error) {
+    console.error('MCP external inventory query error:', error);
+    res.status(500).json({ 
+      error: 'query_failed',
+      message: 'Internal server error during inventory query' 
+    });
+  }
+});
+
 // MCP Configuration Endpoint (for client discovery)
 app.get('/mcp/config', (req, res) => {
   res.json({
@@ -346,17 +474,30 @@ app.get('/mcp/config', (req, res) => {
     audience: MCP_AUTH_SERVER_CONFIG.audience,
     issuer: MCP_AUTH_SERVER_CONFIG.issuer,
     endpoints: {
+      // OAuth flow for J.A.R.V.I.S (frontend)
       authorization: '/oauth2/token',
       inventoryQuery: '/mcp/inventory/query',
+      
+      // Direct access for external LLMs
+      externalInventory: '/mcp/external/inventory',
       health: '/mcp/health'
     },
     supportedGrantTypes: ['urn:ietf:params:oauth:grant-type:jwt-bearer'],
     supportedQueries: ['warehouse', 'all_inventory', 'low_stock'],
     tokenType: 'Bearer',
-    authFlow: 'JAG JWT → JWT validation → MCP access token → Inventory access',
+    authFlow: {
+      frontend: 'JAG JWT → JWT validation → MCP access token → Inventory access',
+      external: 'Basic auth with client credentials → Direct inventory access'
+    },
     oktaIntegration: {
       domain: MCP_AUTH_SERVER_CONFIG.oktaDomain,
       jwksEndpoint: `https://${MCP_AUTH_SERVER_CONFIG.oktaDomain}/oauth2/v1/keys`
+    },
+    externalAccess: {
+      endpoint: '/mcp/external/inventory',
+      authentication: 'Basic Auth',
+      credentials: 'clientId:clientSecret',
+      note: 'Direct access for external LLM systems without JAG token requirement'
     }
   });
 });

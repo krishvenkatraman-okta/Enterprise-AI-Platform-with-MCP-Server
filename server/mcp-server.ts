@@ -5,17 +5,16 @@ import { oktaService } from './services/okta';
 const app = express();
 app.use(express.json());
 
-// MCP Server Configuration for LLM Client
-const MCP_CLIENT_CONFIG = {
-  clientId: process.env.MCP_CLIENT_ID || 'mcp_llm_client_001',
-  clientSecret: process.env.MCP_CLIENT_SECRET || 'mcp_secret_for_llm_communication_2024',
-  audience: 'mcp-inventory-access'
+// MCP Server's Own OAuth Client Configuration (for inventory system access)
+const MCP_SERVER_CONFIG = {
+  clientId: process.env.MCP_SERVER_CLIENT_ID || 'mcp_inventory_server_001',
+  clientSecret: process.env.MCP_SERVER_CLIENT_SECRET || 'mcp_server_secret_2024_inventory_access',
+  audience: 'http://localhost:5001/inventory',
+  oktaDomain: process.env.OKTA_DOMAIN || 'fcxdemo.okta.com'
 };
 
 interface MCPTokenExchangeRequest {
   jagToken: string;
-  clientId: string;
-  clientSecret: string;
 }
 
 interface InventoryQuery {
@@ -27,23 +26,15 @@ interface InventoryQuery {
   };
 }
 
-// MCP Token Exchange Endpoint - JAG Token → Application Token
+// MCP Token Exchange Endpoint - JAG Token → Application Token via MCP Server credentials
 app.post('/mcp/auth/token-exchange', async (req, res) => {
   try {
-    const { jagToken, clientId, clientSecret }: MCPTokenExchangeRequest = req.body;
+    const { jagToken }: MCPTokenExchangeRequest = req.body;
     
-    if (!jagToken || !clientId || !clientSecret) {
+    if (!jagToken) {
       return res.status(400).json({ 
-        error: 'missing_credentials',
-        message: 'JAG token, client ID, and client secret are required' 
-      });
-    }
-
-    // Validate MCP client credentials
-    if (clientId !== MCP_CLIENT_CONFIG.clientId || clientSecret !== MCP_CLIENT_CONFIG.clientSecret) {
-      return res.status(401).json({ 
-        error: 'invalid_client',
-        message: 'Invalid MCP client credentials' 
+        error: 'missing_jag_token',
+        message: 'JAG token is required' 
       });
     }
 
@@ -55,21 +46,50 @@ app.post('/mcp/auth/token-exchange', async (req, res) => {
       });
     }
 
-    // Generate MCP Application Token
-    const mcpApplicationToken = `mcp_app_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    console.log('=== MCP Server Token Exchange ===');
+    console.log(`Received JAG Token (preview): ${jagToken.substring(0, 50)}...`);
+    console.log(`MCP Server Client ID: ${MCP_SERVER_CONFIG.clientId}`);
     
-    console.log('=== MCP Token Exchange ===');
-    console.log(`JAG Token (preview): ${jagToken.substring(0, 50)}...`);
-    console.log(`MCP Client: ${clientId}`);
-    console.log(`MCP App Token: ${mcpApplicationToken}`);
-    console.log('============================');
+    // MCP Server exchanges JAG token for application token using its own credentials
+    const tokenExchangeResponse = await fetch(`https://${MCP_SERVER_CONFIG.oktaDomain}/oauth2/v1/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+        requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+        subject_token: jagToken,
+        subject_token_type: 'urn:ietf:params:oauth:token-type:id-jag',
+        audience: MCP_SERVER_CONFIG.audience,
+        client_id: MCP_SERVER_CONFIG.clientId,
+        client_secret: MCP_SERVER_CONFIG.clientSecret
+      })
+    });
+
+    if (!tokenExchangeResponse.ok) {
+      const errorData = await tokenExchangeResponse.text();
+      console.error('MCP Server Okta token exchange failed:', errorData);
+      return res.status(401).json({ 
+        error: 'okta_token_exchange_failed',
+        message: 'Failed to exchange JAG token with Okta using MCP server credentials' 
+      });
+    }
+
+    const tokenData = await tokenExchangeResponse.json();
+    
+    console.log(`MCP Server obtained application token: ${tokenData.access_token.substring(0, 30)}...`);
+    console.log(`Token type: ${tokenData.issued_token_type}`);
+    console.log('==================================');
 
     res.json({
       success: true,
-      applicationToken: mcpApplicationToken,
+      applicationToken: tokenData.access_token,
       tokenType: 'mcp_application_token',
-      audience: MCP_CLIENT_CONFIG.audience,
-      expiresIn: 3600,
+      issuedTokenType: tokenData.issued_token_type,
+      audience: MCP_SERVER_CONFIG.audience,
+      expiresIn: tokenData.expires_in || 3600,
       scope: 'inventory:read warehouse:read'
     });
   } catch (error) {
@@ -87,7 +107,7 @@ app.post('/mcp/inventory/query', async (req, res) => {
     const authHeader = req.headers.authorization;
     const mcpToken = authHeader?.replace('Bearer ', '');
     
-    if (!mcpToken || !mcpToken.startsWith('mcp_app_')) {
+    if (!mcpToken || !mcpToken.startsWith('eyJ')) {
       return res.status(401).json({ 
         error: 'unauthorized',
         message: 'Valid MCP application token required' 
@@ -203,15 +223,16 @@ app.get('/mcp/health', (req, res) => {
 // MCP Configuration Endpoint (for client discovery)
 app.get('/mcp/config', (req, res) => {
   res.json({
-    clientId: MCP_CLIENT_CONFIG.clientId,
-    audience: MCP_CLIENT_CONFIG.audience,
+    serverName: 'MCP Inventory Server',
+    audience: MCP_SERVER_CONFIG.audience,
     endpoints: {
       tokenExchange: '/mcp/auth/token-exchange',
       inventoryQuery: '/mcp/inventory/query',
       health: '/mcp/health'
     },
     supportedQueries: ['warehouse', 'all_inventory', 'low_stock'],
-    tokenType: 'mcp_application_token'
+    tokenType: 'mcp_application_token',
+    authFlow: 'JAG token → MCP server exchanges → Application token → Inventory access'
   });
 });
 

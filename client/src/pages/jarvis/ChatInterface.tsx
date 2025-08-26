@@ -52,8 +52,28 @@ export default function ChatInterface() {
   const queryClient = useQueryClient();
 
   const { data: inventoryData } = useQuery<InventoryData[]>({
-    queryKey: ["/api/jarvis/inventory"],
+    queryKey: ["/mcp/inventory/query"],
     enabled: hasAccessToken,
+    queryFn: async () => {
+      const applicationToken = localStorage.getItem('application_token');
+      const response = await fetch('/mcp/inventory/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${applicationToken}`
+        },
+        body: JSON.stringify({
+          type: 'all_inventory'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch inventory via MCP');
+      }
+      
+      const mcpResponse = await response.json();
+      return mcpResponse.data; // Extract data from MCP response wrapper
+    }
   });
 
   // Auto-display warehouse data after inventory is fetched
@@ -107,10 +127,10 @@ export default function ChatInterface() {
     },
   });
 
-  // Step 2: Exchange JAG token for Application token with inventory app
+  // Step 2: Exchange JAG token for Application token via MCP server
   const appTokenMutation = useMutation({
     mutationFn: async (jagToken: string) => {
-      const response = await apiRequest('POST', '/api/inventory/token-exchange', {
+      const response = await apiRequest('POST', '/mcp/auth/token-exchange', {
         jagToken: jagToken
       });
       return response.json();
@@ -118,18 +138,18 @@ export default function ChatInterface() {
     onSuccess: (data) => {
       setHasAccessToken(true);
       localStorage.setItem('application_token', data.applicationToken);
-      queryClient.invalidateQueries({ queryKey: ["/api/jarvis/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
       
       addMessage({
         type: 'system',
-        content: `Application token obtained. Cross-app authentication complete. Now fetching inventory data...`,
+        content: `MCP server exchanged JAG token for application token. Cross-app authentication complete. Now fetching inventory data...`,
       });
     },
     onError: (error) => {
       toast({
-        title: "Application Token Failed",
-        description: "Unable to exchange JAG token for inventory access.",
+        title: "MCP Token Exchange Failed",
+        description: "Unable to exchange JAG token via MCP server.",
         variant: "destructive",
       });
     },
@@ -209,7 +229,7 @@ export default function ChatInterface() {
             type: 'jarvis',
             content: 'Let me fetch the latest inventory data for you...',
           });
-          queryClient.invalidateQueries({ queryKey: ["/api/jarvis/inventory"] });
+          queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
         }
       } else if (lowerMessage.includes('texas') || lowerMessage.includes('california') || lowerMessage.includes('nevada')) {
         const state = lowerMessage.includes('texas') ? 'Texas' : 

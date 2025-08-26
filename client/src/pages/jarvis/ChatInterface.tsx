@@ -127,23 +127,42 @@ export default function ChatInterface() {
     },
   });
 
-  // Step 2: Exchange JAG token for Application token via MCP server
+  // Step 2: Exchange JAG token for Application token via MCP Authorization Server (JWT-bearer flow)
   const appTokenMutation = useMutation({
     mutationFn: async (jagToken: string) => {
-      const response = await apiRequest('POST', '/mcp/auth/token-exchange', {
-        jagToken: jagToken
+      // Create Basic Auth header for MCP client credentials
+      const mcpClientId = 'mcp_inventory_server_001';
+      const mcpClientSecret = 'mcp_server_secret_2024_inventory_access';
+      const basicAuth = btoa(`${mcpClientId}:${mcpClientSecret}`);
+      
+      const response = await fetch('/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${basicAuth}`
+        },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          assertion: jagToken
+        })
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error_description || 'MCP token exchange failed');
+      }
+      
       return response.json();
     },
     onSuccess: (data) => {
       setHasAccessToken(true);
-      localStorage.setItem('application_token', data.applicationToken);
+      localStorage.setItem('application_token', data.access_token);
       queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
       
       addMessage({
         type: 'system',
-        content: `MCP server exchanged JAG token for application token. Cross-app authentication complete. Now fetching inventory data...`,
+        content: `MCP authorization server validated JAG token and issued access token. Cross-app authentication complete. Now fetching inventory data...`,
       });
     },
     onError: (error) => {

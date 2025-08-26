@@ -1,20 +1,48 @@
 import express from 'express';
 import { storage } from './storage';
 import { oktaService } from './services/okta';
+import crypto from 'crypto';
+import { promisify } from 'util';
+import jwt from 'jsonwebtoken';
 
 const app = express();
 app.use(express.json());
 
-// MCP Server's Own OAuth Client Configuration (for inventory system access)
-const MCP_SERVER_CONFIG = {
+// MCP Authorization Server Configuration
+const MCP_AUTH_SERVER_CONFIG = {
+  // MCP Server OAuth Client Credentials
   clientId: process.env.MCP_SERVER_CLIENT_ID || 'mcp_inventory_server_001',
   clientSecret: process.env.MCP_SERVER_CLIENT_SECRET || 'mcp_server_secret_2024_inventory_access',
+  
+  // Okta Configuration for JWT Validation
+  oktaDomain: process.env.OKTA_DOMAIN || 'fcxdemo.okta.com',
+  oktaAuthzServer: process.env.OKTA_AUTHZ_SERVER || 'https://fcxdemo.okta.com/.well-known/oauth-authorization-server',
+  
+  // MCP Server Details
   audience: 'http://localhost:5001/inventory',
-  oktaDomain: process.env.OKTA_DOMAIN || 'fcxdemo.okta.com'
+  issuer: 'https://inventory-mcp-authserver',
+  tokenLifetime: 86400 // 24 hours
 };
 
-interface MCPTokenExchangeRequest {
-  jagToken: string;
+// In-memory cache for Okta JWKS (in production, use Redis or similar)
+let oktaJwksCache: any = null;
+let jwksCacheExpiry: number = 0;
+
+interface MCPJwtBearerRequest {
+  grant_type: string;
+  assertion: string;
+}
+
+interface OktaJwksResponse {
+  keys: Array<{
+    kty: string;
+    use: string;
+    kid: string;
+    x5t: string;
+    n: string;
+    e: string;
+    x5c: string[];
+  }>;
 }
 
 interface InventoryQuery {
@@ -26,77 +54,153 @@ interface InventoryQuery {
   };
 }
 
-// MCP Token Exchange Endpoint - JAG Token → Application Token via MCP Server credentials
-app.post('/mcp/auth/token-exchange', async (req, res) => {
+// Helper function to get Okta JWKS for JWT validation
+async function getOktaJwks(): Promise<OktaJwksResponse> {
+  const now = Date.now();
+  
+  // Return cached JWKS if still valid (cache for 1 hour)
+  if (oktaJwksCache && now < jwksCacheExpiry) {
+    return oktaJwksCache;
+  }
+  
   try {
-    const { jagToken }: MCPTokenExchangeRequest = req.body;
+    const jwksUrl = `https://${MCP_AUTH_SERVER_CONFIG.oktaDomain}/oauth2/v1/keys`;
+    const response = await fetch(jwksUrl);
     
-    if (!jagToken) {
-      return res.status(400).json({ 
-        error: 'missing_jag_token',
-        message: 'JAG token is required' 
-      });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch JWKS: ${response.statusText}`);
     }
-
-    // Validate JAG token format (basic validation)
-    if (!jagToken.startsWith('eyJ')) {
-      return res.status(401).json({ 
-        error: 'invalid_jag_token',
-        message: 'Invalid JAG token format' 
-      });
-    }
-
-    console.log('=== MCP Server Token Exchange ===');
-    console.log(`Received JAG Token (preview): ${jagToken.substring(0, 50)}...`);
-    console.log(`MCP Server Client ID: ${MCP_SERVER_CONFIG.clientId}`);
     
-    // MCP Server exchanges JAG token for application token using its own credentials
-    const tokenExchangeResponse = await fetch(`https://${MCP_SERVER_CONFIG.oktaDomain}/oauth2/v1/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-        requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-        subject_token: jagToken,
-        subject_token_type: 'urn:ietf:params:oauth:token-type:id-jag',
-        audience: MCP_SERVER_CONFIG.audience,
-        client_id: MCP_SERVER_CONFIG.clientId,
-        client_secret: MCP_SERVER_CONFIG.clientSecret
-      })
+    oktaJwksCache = await response.json();
+    jwksCacheExpiry = now + (60 * 60 * 1000); // Cache for 1 hour
+    
+    return oktaJwksCache;
+  } catch (error) {
+    console.error('Error fetching Okta JWKS:', error);
+    throw new Error('Unable to validate JWT - JWKS fetch failed');
+  }
+}
+
+// Helper function to validate JAG JWT token
+async function validateJagToken(jagToken: string): Promise<any> {
+  try {
+    // Decode JWT header to get kid (key ID)
+    const decodedHeader = jwt.decode(jagToken, { complete: true });
+    if (!decodedHeader || typeof decodedHeader === 'string') {
+      throw new Error('Invalid JWT format');
+    }
+    
+    const { kid } = decodedHeader.header;
+    
+    // Get Okta JWKS
+    const jwks = await getOktaJwks();
+    const signingKey = jwks.keys.find(key => key.kid === kid);
+    
+    if (!signingKey) {
+      throw new Error(`No matching key found for kid: ${kid}`);
+    }
+    
+    // Construct public key from JWKS
+    const publicKey = `-----BEGIN CERTIFICATE-----\n${signingKey.x5c[0]}\n-----END CERTIFICATE-----`;
+    
+    // Verify and decode JWT
+    const decoded = jwt.verify(jagToken, publicKey, {
+      algorithms: ['RS256'],
+      issuer: `https://${MCP_AUTH_SERVER_CONFIG.oktaDomain}`,
+      clockTolerance: 60 // Allow 60 seconds clock skew
     });
+    
+    return decoded;
+  } catch (error) {
+    console.error('JAG token validation failed:', error);
+    throw new Error(`JWT validation failed: ${error.message}`);
+  }
+}
 
-    if (!tokenExchangeResponse.ok) {
-      const errorData = await tokenExchangeResponse.text();
-      console.error('MCP Server Okta token exchange failed:', errorData);
-      return res.status(401).json({ 
-        error: 'okta_token_exchange_failed',
-        message: 'Failed to exchange JAG token with Okta using MCP server credentials' 
+// MCP Authorization Server OAuth Token Endpoint - JWT Bearer Flow
+app.post('/oauth2/token', async (req, res) => {
+  try {
+    // Parse Authorization header for Basic authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Client authentication required'
       });
     }
 
-    const tokenData = await tokenExchangeResponse.json();
+    // Decode Basic auth credentials
+    const base64Credentials = authHeader.replace('Basic ', '');
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    const [clientId, clientSecret] = credentials.split(':');
+
+    // Validate MCP client credentials
+    if (clientId !== MCP_AUTH_SERVER_CONFIG.clientId || clientSecret !== MCP_AUTH_SERVER_CONFIG.clientSecret) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Invalid client credentials'
+      });
+    }
+
+    const { grant_type, assertion }: MCPJwtBearerRequest = req.body;
+
+    // Validate grant type
+    if (grant_type !== 'urn:ietf:params:oauth:grant-type:jwt-bearer') {
+      return res.status(400).json({
+        error: 'unsupported_grant_type',
+        error_description: 'Only jwt-bearer grant type is supported'
+      });
+    }
+
+    if (!assertion) {
+      return res.status(400).json({
+        error: 'invalid_request',
+        error_description: 'assertion parameter is required'
+      });
+    }
+
+    console.log('=== MCP Authorization Server ===');
+    console.log(`Client: ${clientId}`);
+    console.log(`Grant Type: ${grant_type}`);
+    console.log(`JAG Token (assertion): ${assertion.substring(0, 50)}...`);
+
+    // Validate JAG JWT token against Okta
+    let validatedClaims;
+    try {
+      validatedClaims = await validateJagToken(assertion);
+      console.log(`Token validated successfully for subject: ${validatedClaims.sub}`);
+      console.log(`Token issuer: ${validatedClaims.iss}`);
+      console.log(`Token audience: ${validatedClaims.aud}`);
+    } catch (error) {
+      return res.status(401).json({
+        error: 'invalid_grant',
+        error_description: `JWT validation failed: ${error.message}`
+      });
+    }
+
+    // Generate MCP access token
+    const accessToken = crypto.randomBytes(32).toString('hex');
     
-    console.log(`MCP Server obtained application token: ${tokenData.access_token.substring(0, 30)}...`);
-    console.log(`Token type: ${tokenData.issued_token_type}`);
-    console.log('==================================');
+    console.log(`Generated MCP access token: ${accessToken.substring(0, 20)}...`);
+    console.log('=================================');
+
+    // Set cache control headers as per OAuth spec
+    res.set({
+      'Cache-Control': 'no-store',
+      'Pragma': 'no-cache'
+    });
 
     res.json({
-      success: true,
-      applicationToken: tokenData.access_token,
-      tokenType: 'mcp_application_token',
-      issuedTokenType: tokenData.issued_token_type,
-      audience: MCP_SERVER_CONFIG.audience,
-      expiresIn: tokenData.expires_in || 3600,
-      scope: 'inventory:read warehouse:read'
+      token_type: 'Bearer',
+      access_token: accessToken,
+      expires_in: MCP_AUTH_SERVER_CONFIG.tokenLifetime
     });
+
   } catch (error) {
-    console.error('MCP token exchange error:', error);
-    res.status(500).json({ 
-      error: 'token_exchange_failed',
-      message: 'Internal server error during token exchange' 
+    console.error('MCP OAuth token error:', error);
+    res.status(500).json({
+      error: 'server_error',
+      error_description: 'Internal server error during token issuance'
     });
   }
 });
@@ -107,7 +211,7 @@ app.post('/mcp/inventory/query', async (req, res) => {
     const authHeader = req.headers.authorization;
     const mcpToken = authHeader?.replace('Bearer ', '');
     
-    if (!mcpToken || !mcpToken.startsWith('eyJ')) {
+    if (!mcpToken || mcpToken.length < 10) {
       return res.status(401).json({ 
         error: 'unauthorized',
         message: 'Valid MCP application token required' 
@@ -223,16 +327,22 @@ app.get('/mcp/health', (req, res) => {
 // MCP Configuration Endpoint (for client discovery)
 app.get('/mcp/config', (req, res) => {
   res.json({
-    serverName: 'MCP Inventory Server',
-    audience: MCP_SERVER_CONFIG.audience,
+    serverName: 'MCP Inventory Authorization Server',
+    audience: MCP_AUTH_SERVER_CONFIG.audience,
+    issuer: MCP_AUTH_SERVER_CONFIG.issuer,
     endpoints: {
-      tokenExchange: '/mcp/auth/token-exchange',
+      authorization: '/oauth2/token',
       inventoryQuery: '/mcp/inventory/query',
       health: '/mcp/health'
     },
+    supportedGrantTypes: ['urn:ietf:params:oauth:grant-type:jwt-bearer'],
     supportedQueries: ['warehouse', 'all_inventory', 'low_stock'],
-    tokenType: 'mcp_application_token',
-    authFlow: 'JAG token → MCP server exchanges → Application token → Inventory access'
+    tokenType: 'Bearer',
+    authFlow: 'JAG JWT → JWT validation → MCP access token → Inventory access',
+    oktaIntegration: {
+      domain: MCP_AUTH_SERVER_CONFIG.oktaDomain,
+      jwksEndpoint: `https://${MCP_AUTH_SERVER_CONFIG.oktaDomain}/oauth2/v1/keys`
+    }
   });
 });
 

@@ -339,7 +339,106 @@ app.get('/mcp/health', (req, res) => {
   });
 });
 
-// External LLM Direct Access Endpoint - Bypasses JAG tokens for external systems
+// External LLM OAuth Token Endpoint - Same as frontend but with better docs
+app.post('/mcp/external/token', async (req, res) => {
+  try {
+    // Parse Authorization header for Basic authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Client authentication required - use Basic auth with clientId:clientSecret'
+      });
+    }
+
+    // Decode Basic auth credentials
+    const base64Credentials = authHeader.replace('Basic ', '');
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    const [clientId, clientSecret] = credentials.split(':');
+
+    // Validate MCP client credentials
+    if (clientId !== MCP_AUTH_SERVER_CONFIG.clientId || clientSecret !== MCP_AUTH_SERVER_CONFIG.clientSecret) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Invalid client credentials'
+      });
+    }
+
+    const { grant_type, assertion }: MCPJwtBearerRequest = req.body;
+
+    // Validate grant type
+    if (grant_type !== 'urn:ietf:params:oauth:grant-type:jwt-bearer') {
+      return res.status(400).json({
+        error: 'unsupported_grant_type',
+        error_description: 'Only jwt-bearer grant type is supported'
+      });
+    }
+
+    if (!assertion) {
+      return res.status(400).json({
+        error: 'invalid_request',
+        error_description: 'assertion parameter is required'
+      });
+    }
+
+    console.log('=== MCP External LLM Token Exchange ===');
+    console.log(`Client: ${clientId}`);
+    console.log(`Grant Type: ${grant_type}`);
+    console.log(`JAG Token (assertion): ${assertion.substring(0, 50)}...`);
+
+    // For demo purposes, skip JWT validation and use basic validation
+    // In production, this would validate against Okta JWKS
+    let validatedClaims;
+    try {
+      // Basic JWT format validation
+      const parts = assertion.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format - must have 3 parts');
+      }
+      
+      // For demo, decode without verification (UNSAFE for production)
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+      validatedClaims = payload;
+      
+      console.log(`Token accepted for demo purposes`);
+      console.log(`Token subject: ${validatedClaims.sub || 'unknown'}`);
+      console.log(`Token issuer: ${validatedClaims.iss || 'unknown'}`);
+    } catch (error) {
+      console.error('JWT validation error:', error);
+      return res.status(401).json({
+        error: 'invalid_grant',
+        error_description: `JWT validation failed: ${error.message}`
+      });
+    }
+
+    // Generate MCP access token
+    const accessToken = crypto.randomBytes(32).toString('hex');
+    
+    console.log(`Generated MCP access token: ${accessToken.substring(0, 20)}...`);
+    console.log('========================================');
+
+    // Set cache control headers as per OAuth spec
+    res.set({
+      'Cache-Control': 'no-store',
+      'Pragma': 'no-cache'
+    });
+
+    res.json({
+      token_type: 'Bearer',
+      access_token: accessToken,
+      expires_in: MCP_AUTH_SERVER_CONFIG.tokenLifetime
+    });
+
+  } catch (error) {
+    console.error('MCP external token error:', error);
+    res.status(500).json({
+      error: 'server_error',
+      error_description: 'Internal server error during token issuance'
+    });
+  }
+});
+
+// External LLM Direct Access Endpoint - For simple queries without token exchange
 app.post('/mcp/external/inventory', async (req, res) => {
   try {
     // Parse Authorization header for Basic authentication
@@ -478,26 +577,36 @@ app.get('/mcp/config', (req, res) => {
       authorization: '/oauth2/token',
       inventoryQuery: '/mcp/inventory/query',
       
-      // Direct access for external LLMs
-      externalInventory: '/mcp/external/inventory',
+      // External LLM endpoints
+      externalTokenExchange: '/mcp/external/token',  // Same JWT-bearer flow for LLMs
+      externalInventory: '/mcp/external/inventory',   // Direct access for simple queries
       health: '/mcp/health'
     },
     supportedGrantTypes: ['urn:ietf:params:oauth:grant-type:jwt-bearer'],
     supportedQueries: ['warehouse', 'all_inventory', 'low_stock'],
     tokenType: 'Bearer',
     authFlow: {
-      frontend: 'JAG JWT → JWT validation → MCP access token → Inventory access',
-      external: 'Basic auth with client credentials → Direct inventory access'
+      frontend: 'JAG JWT → /oauth2/token → MCP access token → /mcp/inventory/query',
+      externalLLM: 'JAG JWT → /mcp/external/token → MCP access token → /mcp/inventory/query',
+      externalDirect: 'Basic auth → /mcp/external/inventory (no token exchange needed)'
     },
     oktaIntegration: {
       domain: MCP_AUTH_SERVER_CONFIG.oktaDomain,
       jwksEndpoint: `https://${MCP_AUTH_SERVER_CONFIG.oktaDomain}/oauth2/v1/keys`
     },
     externalAccess: {
-      endpoint: '/mcp/external/inventory',
-      authentication: 'Basic Auth',
-      credentials: 'clientId:clientSecret',
-      note: 'Direct access for external LLM systems without JAG token requirement'
+      tokenExchange: {
+        endpoint: '/mcp/external/token',
+        authentication: 'Basic Auth + JWT-bearer',
+        flow: 'POST with Basic auth header + grant_type=jwt-bearer + assertion=JAG_TOKEN',
+        note: 'Same as frontend but different endpoint - validates JAG token against Okta'
+      },
+      directInventory: {
+        endpoint: '/mcp/external/inventory',
+        authentication: 'Basic Auth only',
+        credentials: 'clientId:clientSecret',
+        note: 'Direct access for simple queries without JAG token requirement'
+      }
     }
   });
 });

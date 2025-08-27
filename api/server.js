@@ -325,13 +325,15 @@ app.post('/api/auth/token-exchange', async (req, res) => {
     console.log('Request body string length:', requestBody.toString().length);
     
     try {
+      // Try the exact same approach as the working oktaService implementation
+      console.log('Making token exchange request with body as string:', requestBody.toString());
+      
       const response = await fetch(tokenUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'Node.js-fetch',
         },
-        body: requestBody
+        body: requestBody.toString() // Use .toString() like the working implementation
       });
 
       console.log('Token exchange response status:', response.status);

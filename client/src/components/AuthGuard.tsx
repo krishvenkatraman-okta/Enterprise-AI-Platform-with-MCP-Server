@@ -47,13 +47,25 @@ export default function AuthGuard({
   useEffect(() => {
     // Handle OAuth callback - let backend handle token exchange
     const handleCallback = async () => {
+      // Only process callback if we're on a callback URL
+      if (!window.location.pathname.includes('/callback')) {
+        return;
+      }
+
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
       const storedState = sessionStorage.getItem('oauth_state');
       const codeVerifier = sessionStorage.getItem('code_verifier');
 
-      console.log('Callback debug:', { code, state, storedState, codeVerifier });
+      console.log('Callback debug:', { 
+        pathname: window.location.pathname,
+        code: code ? 'present' : 'missing', 
+        state: state ? 'present' : 'missing', 
+        storedState: storedState ? 'present' : 'missing', 
+        codeVerifier: codeVerifier ? 'present' : 'missing',
+        config: config ? 'loaded' : 'not loaded'
+      });
       
       if (code && state === storedState && codeVerifier && config) {
         setIsLoading(true);
@@ -93,8 +105,7 @@ export default function AuthGuard({
           
           // Redirect to the appropriate application after successful authentication
           const redirectPath = application === 'inventory' ? '/inventory' : '/jarvis';
-          window.history.replaceState({}, document.title, redirectPath);
-          window.location.pathname = redirectPath;
+          window.location.href = redirectPath;
         } catch (error) {
           console.error('Authentication error:', error);
         } finally {

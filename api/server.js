@@ -259,9 +259,14 @@ app.post('/api/auth/token-exchange', async (req, res) => {
     const authServer = process.env.OKTA_AUTHORIZATION_SERVER || "https://fcxdemo.okta.com/oauth2";
     const oktaDomain = authServer.includes('://') ? authServer.split('://')[1].split('/')[0] : oktaDomainRaw;
     const jarvisClientId = process.env.JARVIS_CLIENT_ID || "0oau8wb0eiLgOCT1X697";
-    const inventoryClientId = process.env.INVENTORY_CLIENT_ID || "0oau8x7jn10yYmlhw697";
+    const jarvisClientSecret = process.env.JARVIS_CLIENT_SECRET || "e6DQE5cSnD3qCYx6BpfBDLzNgZrI-wRobgrcpz4ylyKfBhv7ljkRZcrLuTk_Innt";
+    const audience = process.env.AUDIENCE || "http://localhost:5001";
     
-    console.log('Using Okta configuration for token exchange:', { oktaDomain, jarvisClientId: jarvisClientId.substring(0, 10) + '...' });
+    console.log('Using Okta configuration for token exchange:', { 
+      oktaDomain, 
+      jarvisClientId: jarvisClientId.substring(0, 10) + '...',
+      audience 
+    });
 
     // Exchange JAG token using OAuth 2.0 Token Exchange (RFC 8693)
     const tokenUrl = `https://${oktaDomain}/oauth2/v1/token`;
@@ -275,11 +280,12 @@ app.post('/api/auth/token-exchange', async (req, res) => {
         },
         body: new URLSearchParams({
           grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+          requested_token_type: 'urn:ietf:params:oauth:token-type:id-jag',
           subject_token: idToken,
           subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
-          audience: inventoryClientId,
-          requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+          audience: audience,
           client_id: jarvisClientId,
+          client_secret: jarvisClientSecret,
         })
       });
 

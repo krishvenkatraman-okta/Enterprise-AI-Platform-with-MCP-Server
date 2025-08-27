@@ -3,13 +3,12 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { oktaService } from "./services/okta";
 import { authenticateToken, requireInventoryAccess, requireJarvisAccess, type AuthenticatedRequest } from "./services/auth";
-import { insertUserSchema, insertInventoryItemSchema, insertWarehouseSchema } from "@shared/schema";
+import { insertUserSchema, insertInventoryItemSchema, insertWarehouseSchema } from "@shared/types";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize default warehouses on startup
-  await initializeDefaultData();
+  // Memory storage automatically initializes with default data
 
   // Auth routes
   app.post("/api/auth/callback", async (req, res) => {
@@ -376,48 +375,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-async function initializeDefaultData() {
-  try {
-    const existingWarehouses = await storage.getWarehouses();
-    if (existingWarehouses.length > 0) {
-      return; // Already initialized
-    }
 
-    // Create default warehouses
-    const warehouses = [
-      { name: "Texas Warehouse", location: "Dallas, TX", state: "Texas" },
-      { name: "California Warehouse", location: "Los Angeles, CA", state: "California" },
-      { name: "Nevada Warehouse", location: "Las Vegas, NV", state: "Nevada" },
-    ];
-
-    const createdWarehouses = await Promise.all(
-      warehouses.map(warehouse => storage.createWarehouse(warehouse))
-    );
-
-    // Create sample inventory for each warehouse
-    const sampleItems = [
-      { name: "Atlas Cola Classic", sku: "AC-001", category: "Beverages", quantity: 1250, minStockLevel: 100 },
-      { name: "Atlas Energy Drink", sku: "AE-008", category: "Beverages", quantity: 892, minStockLevel: 75 },
-      { name: "Crunch Chips Original", sku: "CC-015", category: "Snacks", quantity: 45, minStockLevel: 50 },
-      { name: "Atlas Sparkling Water", sku: "ASW-003", category: "Beverages", quantity: 567, minStockLevel: 100 },
-      { name: "Premium Nuts Mix", sku: "PNM-022", category: "Snacks", quantity: 234, minStockLevel: 30 },
-    ];
-
-    for (const warehouse of createdWarehouses) {
-      await Promise.all(
-        sampleItems.map(item => 
-          storage.createInventoryItem({
-            ...item,
-            warehouseId: warehouse.id,
-            // Vary quantities per warehouse
-            quantity: Math.floor(item.quantity * (0.7 + Math.random() * 0.6)),
-          })
-        )
-      );
-    }
-
-    console.log("Default warehouses and inventory initialized");
-  } catch (error) {
-    console.error("Failed to initialize default data:", error);
-  }
-}

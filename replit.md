@@ -17,19 +17,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Backend Architecture
 - **Express.js Server**: RESTful API server with TypeScript
-- **Database Layer**: Drizzle ORM with PostgreSQL (Neon serverless)
+- **Storage Layer**: In-memory storage with realistic demo data (no database dependencies)
 - **Authentication**: Okta OAuth 2.0 with PKCE flow and token exchange for cross-application access
-- **Session Management**: Database-stored sessions with automatic cleanup
+- **Session Management**: In-memory sessions with automatic cleanup
 - **API Design**: RESTful endpoints with proper HTTP status codes and error handling
 
 ## Data Storage Solutions
-- **Primary Database**: PostgreSQL via Neon serverless platform
-- **Schema Management**: Drizzle ORM with migration support
-- **Key Tables**:
+- **In-Memory Storage**: Session-based data persistence for demo purposes
+- **Demo Data**: Pre-populated with 3 warehouses and 13 inventory items
+- **Key Data Types**:
   - Users (with Okta integration)
   - Warehouses and inventory items
   - Authentication sessions
   - Token exchange audit logs
+- **Reset Behavior**: Data resets to defaults on server restart (perfect for demos)
 
 ## Authentication and Authorization
 - **OAuth Provider**: Okta with separate client applications for inventory and jarvis
@@ -39,9 +40,14 @@ Preferred communication style: Simple, everyday language.
 - **Security**: PKCE flow, session validation middleware, token expiration checks
 
 ## External Dependencies
-- **Okta**: Identity provider and OAuth authorization server
-- **Neon Database**: Serverless PostgreSQL hosting
+- **Okta**: Identity provider and OAuth authorization server (configurable via environment)
 - **Google Fonts**: Typography assets
 - **Replit**: Development environment integration
 
-The architecture supports a secure dual-interface environment where users authenticate once and can access both interfaces, with J.A.R.V.I.S able to securely query inventory data through JAG token authorization within the same application.
+## Demo-Ready Features
+- **Zero Database Setup**: Works immediately without external dependencies
+- **GitHub/Vercel Friendly**: No infrastructure requirements for deployment
+- **Realistic Demo Data**: 3 warehouses with beverage inventory across California, Texas, and Nevada
+- **Session Persistence**: Data persists during app session, resets to defaults on restart
+
+The architecture supports a secure dual-interface environment where users authenticate once and can access both interfaces, with J.A.R.V.I.S able to securely query inventory data through JAG token authorization within the same application. Perfect for demos, POCs, and showcasing enterprise AI integration patterns.

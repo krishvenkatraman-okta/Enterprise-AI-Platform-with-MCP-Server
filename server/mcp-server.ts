@@ -1,8 +1,6 @@
 import express from 'express';
 import { storage } from './storage';
-import { oktaService } from './services/okta';
 import crypto from 'crypto';
-import { promisify } from 'util';
 import jwt from 'jsonwebtoken';
 
 const app = express();

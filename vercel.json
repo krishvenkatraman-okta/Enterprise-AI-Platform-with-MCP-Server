@@ -27,11 +27,15 @@
       "dest": "/api/server.js"
     },
     {
-      "src": "/inventory",
+      "src": "/inventory(.*)",
       "dest": "/dist/public/index.html"
     },
     {
-      "src": "/jarvis",
+      "src": "/jarvis(.*)",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/login(.*)",
       "dest": "/dist/public/index.html"
     },
     {

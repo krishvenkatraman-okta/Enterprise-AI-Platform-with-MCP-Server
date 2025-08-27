@@ -91,7 +91,10 @@ export default function AuthGuard({
           // Force state update
           setAuthState(authService.getState());
           
-          window.history.replaceState({}, document.title, window.location.pathname);
+          // Redirect to the appropriate application after successful authentication
+          const redirectPath = application === 'inventory' ? '/inventory' : '/jarvis';
+          window.history.replaceState({}, document.title, redirectPath);
+          window.location.pathname = redirectPath;
         } catch (error) {
           console.error('Authentication error:', error);
         } finally {

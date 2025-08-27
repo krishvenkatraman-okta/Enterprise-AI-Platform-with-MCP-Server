@@ -304,21 +304,28 @@ app.post('/api/auth/token-exchange', async (req, res) => {
     const tokenUrl = `https://${oktaDomain}/oauth2/v1/token`;
     console.log('Token exchange URL:', tokenUrl);
     
+    // Prepare the exact same request format as the working curl
+    const requestBody = new URLSearchParams();
+    requestBody.append('grant_type', 'urn:ietf:params:oauth:grant-type:token-exchange');
+    requestBody.append('requested_token_type', 'urn:ietf:params:oauth:token-type:id-jag');
+    requestBody.append('subject_token', idToken);
+    requestBody.append('subject_token_type', 'urn:ietf:params:oauth:token-type:id_token');
+    requestBody.append('audience', audience);
+    requestBody.append('client_id', jarvisClientId);
+    requestBody.append('client_secret', jarvisClientSecret);
+    
+    console.log('Token exchange request parameters:');
+    for (const [key, value] of requestBody.entries()) {
+      console.log(`  ${key}: ${key === 'subject_token' ? value.substring(0, 50) + '...' : value}`);
+    }
+    
     try {
       const response = await fetch(tokenUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-          grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-          requested_token_type: 'urn:ietf:params:oauth:token-type:id-jag',
-          subject_token: idToken,
-          subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
-          audience: audience,
-          client_id: jarvisClientId,
-          client_secret: jarvisClientSecret,
-        })
+        body: requestBody
       });
 
       console.log('Token exchange response status:', response.status);

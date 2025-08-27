@@ -28,27 +28,27 @@
     },
     {
       "src": "/login/callback",
-      "dest": "/dist/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/jarvis/callback",
-      "dest": "/dist/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/inventory",
-      "dest": "/dist/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/jarvis",
-      "dest": "/dist/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/",
-      "dest": "/dist/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/public/index.html"
+      "dest": "/index.html"
     }
   ]
 }

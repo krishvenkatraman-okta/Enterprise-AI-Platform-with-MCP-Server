@@ -27,6 +27,9 @@
       "dest": "/api/server.js"
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/login/callback",
       "dest": "/index.html"
     },

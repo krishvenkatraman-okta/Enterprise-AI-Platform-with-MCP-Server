@@ -64,8 +64,18 @@ export default function AuthGuard({
         state: state ? 'present' : 'missing', 
         storedState: storedState ? 'present' : 'missing', 
         codeVerifier: codeVerifier ? 'present' : 'missing',
-        config: config ? 'loaded' : 'not loaded'
+        config: config ? 'loaded' : 'not loaded',
+        application
       });
+
+      // Enhanced debugging
+      if (code) {
+        console.log('Processing OAuth callback with code:', code.substring(0, 10) + '...');
+      }
+      if (!config) {
+        console.log('Config not loaded yet, waiting...');
+        return;
+      }
       
       if (code && state === storedState && codeVerifier && config) {
         setIsLoading(true);
@@ -88,11 +98,16 @@ export default function AuthGuard({
             body: JSON.stringify(requestBody),
           });
 
+          console.log('Callback response status:', response.status);
+          
           if (!response.ok) {
-            throw new Error('Authentication failed');
+            const errorText = await response.text();
+            console.error('Authentication failed:', errorText);
+            throw new Error(`Authentication failed: ${response.status}`);
           }
 
           const data = await response.json();
+          console.log('Authentication successful, processing login...');
           authService.setIdToken(data.idToken);
           await authService.login(data.idToken, application);
 
@@ -105,6 +120,7 @@ export default function AuthGuard({
           
           // Redirect to the appropriate application after successful authentication
           const redirectPath = application === 'inventory' ? '/inventory' : '/jarvis';
+          console.log('Authentication complete, redirecting to:', redirectPath);
           window.location.href = redirectPath;
         } catch (error) {
           console.error('Authentication error:', error);

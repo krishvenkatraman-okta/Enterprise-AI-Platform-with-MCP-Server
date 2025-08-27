@@ -123,7 +123,10 @@ app.post('/api/auth/callback', async (req, res) => {
     }
 
     // Get Okta configuration from environment
-    const oktaDomain = process.env.OKTA_DOMAIN || "fcxdemo.okta.com";
+    const oktaDomainRaw = process.env.OKTA_DOMAIN || "fcxdemo.okta.com";
+    // Fix: Extract domain from authorization server if needed
+    const authServer = process.env.OKTA_AUTHORIZATION_SERVER || "https://fcxdemo.okta.com/oauth2";
+    const oktaDomain = authServer.includes('://') ? authServer.split('://')[1].split('/')[0] : oktaDomainRaw;
     const clientId = application === 'inventory' 
       ? (process.env.INVENTORY_CLIENT_ID || "0oau8x7jn10yYmlhw697")
       : (process.env.JARVIS_CLIENT_ID || "0oau8wb0eiLgOCT1X697");
@@ -134,7 +137,10 @@ app.post('/api/auth/callback', async (req, res) => {
     console.log('Using Okta configuration:', { oktaDomain, clientId: clientId.substring(0, 10) + '...' });
 
     // Exchange authorization code for tokens
-    const tokenUrl = `https://${oktaDomain}/oauth2/v1/token`;
+    // Fix: Remove https:// if it's already in the oktaDomain
+    const cleanDomain = oktaDomain.replace(/^https?:\/\//, '');
+    const tokenUrl = `https://${cleanDomain}/oauth2/v1/token`;
+    console.log('Token URL:', tokenUrl);
     
     try {
       const response = await fetch(tokenUrl, {

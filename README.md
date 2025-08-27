@@ -6,11 +6,16 @@ A comprehensive demo platform featuring dual interfaces: **Atlas Beverages** (in
 
 ```bash
 # Clone and run immediately - no database setup needed!
-git clone <your-repo>
+git clone https://github.com/yourusername/enterprise-ai-platform.git
 cd enterprise-ai-platform
 npm install
 npm run dev
 ```
+
+**🚀 One-Click Deploy:**
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/enterprise-ai-platform)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/yourusername/enterprise-ai-platform)
 
 **That's it!** The app runs on http://localhost:5000 with:
 - ✅ Pre-populated demo inventory across 3 warehouses

@@ -251,9 +251,22 @@ export default function ChatInterface() {
           });
           queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
         }
-      } else if (lowerMessage.includes('texas') || lowerMessage.includes('california') || lowerMessage.includes('nevada')) {
-        const state = lowerMessage.includes('texas') ? 'Texas' : 
-                     lowerMessage.includes('california') ? 'California' : 'Nevada';
+      } else if (lowerMessage.includes('texas') || lowerMessage.includes('california') || lowerMessage.includes('nevada') ||
+                 lowerMessage.includes('west coast') || lowerMessage.includes('central') || lowerMessage.includes('desert')) {
+        // Map user input to warehouse states and names
+        let state = '';
+        let warehouseName = '';
+        
+        if (lowerMessage.includes('texas') || lowerMessage.includes('central')) {
+          state = 'Texas';
+          warehouseName = 'Central Distribution Hub';
+        } else if (lowerMessage.includes('california') || lowerMessage.includes('west coast')) {
+          state = 'California'; 
+          warehouseName = 'West Coast Distribution';
+        } else if (lowerMessage.includes('nevada') || lowerMessage.includes('desert')) {
+          state = 'Nevada';
+          warehouseName = 'Desert Springs Depot';
+        }
         
         if (!hasAccessToken) {
           addMessage({
@@ -271,13 +284,13 @@ export default function ChatInterface() {
         if (warehouseData) {
           addMessage({
             type: 'jarvis',
-            content: `Here's the current inventory status for ${warehouseData.warehouse.name}:`,
+            content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
             inventoryData: [warehouseData],
           });
         } else {
           addMessage({
             type: 'jarvis',
-            content: `I don't have access to ${state} warehouse data at the moment. Let me refresh the inventory information.`,
+            content: `I don't have access to ${warehouseName} data at the moment. Let me refresh the inventory information.`,
           });
         }
       } else if (lowerMessage.includes('low stock') || lowerMessage.includes('reorder')) {
@@ -299,7 +312,7 @@ export default function ChatInterface() {
       } else if (lowerMessage.includes('help') || lowerMessage.includes('what can you do')) {
         addMessage({
           type: 'jarvis',
-          content: 'I can help you with:\n\n• View inventory levels across all warehouses\n• Check specific warehouse inventory (Texas, California, Nevada)\n• Identify low stock items and reorder recommendations\n• Generate inventory reports and analytics\n• Monitor stock movements and trends\n\nWhat would you like to know about the Atlas Beverages inventory?',
+          content: 'I can help you with:\n\n• View inventory levels across all warehouses\n• Check specific warehouse inventory:\n  - West Coast Distribution (California)\n  - Central Distribution Hub (Texas)\n  - Desert Springs Depot (Nevada)\n• Identify low stock items and reorder recommendations\n• Generate inventory reports and analytics\n• Monitor stock movements and trends\n\nWhat would you like to know about the Atlas Beverages inventory?',
         });
       } else {
         addMessage({
@@ -311,8 +324,8 @@ export default function ChatInterface() {
   };
 
   const suggestedQuestions = [
-    "Check California warehouse",
-    "Generate reorder report", 
+    "Show West Coast warehouse inventory",
+    "Check Central Hub status", 
     "Low stock analysis",
     "Show all warehouse status"
   ];

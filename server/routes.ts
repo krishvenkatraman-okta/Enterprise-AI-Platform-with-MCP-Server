@@ -10,6 +10,18 @@ import { randomUUID } from "crypto";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Memory storage automatically initializes with default data
 
+  // Configuration endpoint for frontend
+  app.get("/api/config", (req, res) => {
+    res.json({
+      okta: {
+        domain: process.env.OKTA_DOMAIN || "fcxdemo.okta.com",
+        authorizationServer: process.env.OKTA_AUTHORIZATION_SERVER || "https://fcxdemo.okta.com/oauth2",
+        inventoryClientId: process.env.INVENTORY_CLIENT_ID || "0oau8x7jn10yYmlhw697",
+        jarvisClientId: process.env.JARVIS_CLIENT_ID || "0oau8wb0eiLgOCT1X697"
+      }
+    });
+  });
+
   // Auth routes
   app.post("/api/auth/callback", async (req, res) => {
     try {

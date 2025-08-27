@@ -8,11 +8,11 @@ interface OktaConfig {
 }
 
 const oktaConfig: OktaConfig = {
-  domain: "fcxdemo.okta.com",
-  orgAuthServer: "https://fcxdemo.okta.com/oauth2",
-  inventoryClientId: "0oau8x7jn10yYmlhw697",
+  domain: process.env.OKTA_DOMAIN || "fcxdemo.okta.com",
+  orgAuthServer: process.env.OKTA_AUTHORIZATION_SERVER || "https://fcxdemo.okta.com/oauth2",
+  inventoryClientId: process.env.INVENTORY_CLIENT_ID || "0oau8x7jn10yYmlhw697",
   inventoryClientSecret: process.env.INVENTORY_CLIENT_SECRET || "Ixvrzzgq2jZ4BCdbKXI9YxD0kTwEWpajWDWZcj2niXLJJIoBOjLKKePP4Qf1efDK",
-  jarvisClientId: "0oau8wb0eiLgOCT1X697",
+  jarvisClientId: process.env.JARVIS_CLIENT_ID || "0oau8wb0eiLgOCT1X697",
   jarvisClientSecret: process.env.JARVIS_CLIENT_SECRET || "e6DQE5cSnD3qCYx6BpfBDLzNgZrI-wRobgrcpz4ylyKfBhv7ljkRZcrLuTk_Innt",
 };
 

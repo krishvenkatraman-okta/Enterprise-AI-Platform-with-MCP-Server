@@ -15,7 +15,7 @@ const MCP_AUTH_SERVER_CONFIG = {
   
   // Okta Configuration for JWT Validation
   oktaDomain: process.env.OKTA_DOMAIN || 'fcxdemo.okta.com',
-  oktaAuthzServer: process.env.OKTA_AUTHZ_SERVER || 'https://fcxdemo.okta.com/.well-known/oauth-authorization-server',
+  oktaAuthzServer: process.env.OKTA_AUTHORIZATION_SERVER || 'https://fcxdemo.okta.com/.well-known/oauth-authorization-server',
   
   // MCP Server Details
   audience: 'http://localhost:5001/inventory',

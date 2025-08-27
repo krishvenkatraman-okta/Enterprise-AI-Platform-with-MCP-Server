@@ -305,25 +305,31 @@ app.post('/api/auth/token-exchange', async (req, res) => {
     console.log('Token exchange URL:', tokenUrl);
     
     // Prepare the exact same request format as the working curl
-    const requestBody = new URLSearchParams();
-    requestBody.append('grant_type', 'urn:ietf:params:oauth:grant-type:token-exchange');
-    requestBody.append('requested_token_type', 'urn:ietf:params:oauth:token-type:id-jag');
-    requestBody.append('subject_token', idToken);
-    requestBody.append('subject_token_type', 'urn:ietf:params:oauth:token-type:id_token');
-    requestBody.append('audience', audience);
-    requestBody.append('client_id', jarvisClientId);
-    requestBody.append('client_secret', jarvisClientSecret);
+    const params = {
+      'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+      'requested_token_type': 'urn:ietf:params:oauth:token-type:id-jag',
+      'subject_token': idToken,
+      'subject_token_type': 'urn:ietf:params:oauth:token-type:id_token',
+      'audience': audience,
+      'client_id': jarvisClientId,
+      'client_secret': jarvisClientSecret
+    };
     
     console.log('Token exchange request parameters:');
-    for (const [key, value] of requestBody.entries()) {
+    for (const [key, value] of Object.entries(params)) {
       console.log(`  ${key}: ${key === 'subject_token' ? value.substring(0, 50) + '...' : value}`);
     }
+    
+    // Create URLSearchParams exactly like curl's --data-urlencode
+    const requestBody = new URLSearchParams(params);
+    console.log('Request body string length:', requestBody.toString().length);
     
     try {
       const response = await fetch(tokenUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'Node.js-fetch',
         },
         body: requestBody
       });

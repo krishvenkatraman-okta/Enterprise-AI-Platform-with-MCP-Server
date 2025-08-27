@@ -254,6 +254,38 @@ app.post('/api/auth/token-exchange', async (req, res) => {
 
     const idToken = authHeader.substring(7); // Remove "Bearer " prefix
     
+    console.log('ID Token (first 100 chars):', idToken.substring(0, 100) + '...');
+    
+    // Decode the ID token to check its contents
+    try {
+      const parts = idToken.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+        const isExpired = payload.exp < (Date.now() / 1000);
+        console.log('ID Token payload:', {
+          iss: payload.iss,
+          aud: payload.aud,
+          sub: payload.sub,
+          exp: new Date(payload.exp * 1000).toISOString(),
+          iat: new Date(payload.iat * 1000).toISOString(),
+          now: new Date().toISOString(),
+          isExpired
+        });
+        
+        // Check if token is expired before attempting exchange
+        if (isExpired) {
+          console.error('ID token is expired');
+          return res.status(401).json({ 
+            error: 'Token expired', 
+            details: 'ID token has expired, please re-authenticate',
+            shouldReauth: true 
+          });
+        }
+      }
+    } catch (decodeError) {
+      console.error('Failed to decode ID token:', decodeError);
+    }
+    
     // Get Okta configuration from environment
     const oktaDomainRaw = process.env.OKTA_DOMAIN || "fcxdemo.okta.com";
     const authServer = process.env.OKTA_AUTHORIZATION_SERVER || "https://fcxdemo.okta.com/oauth2";
@@ -294,11 +326,21 @@ app.post('/api/auth/token-exchange', async (req, res) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Token exchange failed:', errorText);
+        
+        // Check if it's a login_required error - token might be expired
+        if (errorText.includes('login_required')) {
+          return res.status(401).json({ 
+            error: 'Token expired', 
+            details: 'ID token has expired, please re-authenticate',
+            shouldReauth: true 
+          });
+        }
+        
         return res.status(401).json({ error: 'Token exchange failed', details: errorText });
       }
 
       const exchangeResult = await response.json();
-      console.log('Token exchange successful');
+      console.log('Token exchange successful, received JAG token');
       
       res.json({
         success: true,

@@ -102,10 +102,23 @@ app.get('/api/config', (req, res) => {
 
 // Auth callback endpoint
 app.post('/api/auth/callback', async (req, res) => {
+  console.log('=== Auth Callback Request ===');
+  console.log('Request body:', req.body);
+  console.log('Headers:', req.headers);
+  
   try {
     const { code, state, application, redirectUri, codeVerifier } = req.body;
     
+    console.log('Callback parameters:', { 
+      code: code ? 'present' : 'missing',
+      state: state ? 'present' : 'missing', 
+      application,
+      redirectUri,
+      codeVerifier: codeVerifier ? 'present' : 'missing'
+    });
+    
     if (!code || !state || !application || !redirectUri || !codeVerifier) {
+      console.error('Missing required parameters');
       return res.status(400).json({ error: "Code, state, application, redirectUri, and codeVerifier are required" });
     }
 
@@ -118,35 +131,43 @@ app.post('/api/auth/callback', async (req, res) => {
       ? (process.env.INVENTORY_CLIENT_SECRET || "Ixvrzzgq2jZ4BCdbKXI9YxD0kTwEWpajWDWZcj2niXLJJIoBOjLKKePP4Qf1efDK")
       : (process.env.JARVIS_CLIENT_SECRET || "e6DQE5cSnD3qCYx6BpfBDLzNgZrI-wRobgrcpz4ylyKfBhv7ljkRZcrLuTk_Innt");
 
+    console.log('Using Okta configuration:', { oktaDomain, clientId: clientId.substring(0, 10) + '...' });
+
     // Exchange authorization code for tokens
     const tokenUrl = `https://${oktaDomain}/oauth2/v1/token`;
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier,
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Token exchange failed:', errorText);
-      return res.status(401).json({ error: 'Token exchange failed' });
-    }
-
-    const tokens = await response.json();
     
-    res.json({
-      idToken: tokens.id_token,
-      success: true,
-    });
+    try {
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+          redirect_uri: redirectUri,
+          code_verifier: codeVerifier,
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Token exchange failed:', errorText);
+        return res.status(401).json({ error: 'Token exchange failed', details: errorText });
+      }
+
+      const tokens = await response.json();
+      
+      res.json({
+        idToken: tokens.id_token,
+        success: true,
+      });
+    } catch (fetchError) {
+      console.error('Fetch error during token exchange:', fetchError);
+      return res.status(500).json({ error: 'Network error during token exchange' });
+    }
   } catch (error) {
     console.error('Callback error:', error);
     res.status(500).json({ error: "Authentication callback failed" });

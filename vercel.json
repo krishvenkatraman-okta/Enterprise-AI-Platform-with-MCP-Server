@@ -27,15 +27,23 @@
       "dest": "/api/server.js"
     },
     {
-      "src": "/inventory(.*)",
+      "src": "/login/callback",
       "dest": "/dist/public/index.html"
     },
     {
-      "src": "/jarvis(.*)",
+      "src": "/jarvis/callback",
       "dest": "/dist/public/index.html"
     },
     {
-      "src": "/login(.*)",
+      "src": "/inventory",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/jarvis",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/",
       "dest": "/dist/public/index.html"
     },
     {

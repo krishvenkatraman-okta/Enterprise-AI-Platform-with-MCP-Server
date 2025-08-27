@@ -27,6 +27,14 @@
       "dest": "/api/server.js"
     },
     {
+      "src": "/inventory",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/jarvis",
+      "dest": "/dist/public/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/dist/public/index.html"
     }

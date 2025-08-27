@@ -1,5 +1,5 @@
-const express = require('express');
-const session = require('express-session');
+import express from 'express';
+import session from 'express-session';
 
 const app = express();
 
@@ -286,4 +286,4 @@ app.use((err, req, res, next) => {
   res.status(status).json({ message });
 });
 
-module.exports = app;
+export default app;

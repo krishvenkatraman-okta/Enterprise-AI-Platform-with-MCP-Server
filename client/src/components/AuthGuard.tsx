@@ -24,12 +24,25 @@ export default function AuthGuard({
 }: AuthGuardProps) {
   const [authState, setAuthState] = useState<AuthState>(authService.getState());
   const [isLoading, setIsLoading] = useState(false);
-  const [config] = useState<OktaConfig>(getOktaConfig(application));
+  const [config, setConfig] = useState<OktaConfig | null>(null);
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setAuthState);
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    // Load Okta configuration
+    const loadConfig = async () => {
+      try {
+        const oktaConfig = await getOktaConfig(application);
+        setConfig(oktaConfig);
+      } catch (error) {
+        console.error('Failed to load Okta config:', error);
+      }
+    };
+    loadConfig();
+  }, [application]);
 
   useEffect(() => {
     // Handle OAuth callback - let backend handle token exchange
@@ -42,7 +55,7 @@ export default function AuthGuard({
 
       console.log('Callback debug:', { code, state, storedState, codeVerifier });
       
-      if (code && state === storedState && codeVerifier) {
+      if (code && state === storedState && codeVerifier && config) {
         setIsLoading(true);
         try {
           const requestBody = {
@@ -91,6 +104,11 @@ export default function AuthGuard({
   }, [config, application]);
 
   const handleLogin = async () => {
+    if (!config) {
+      console.error('Okta config not loaded yet');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const codeVerifier = generateCodeVerifier();
@@ -100,7 +118,9 @@ export default function AuthGuard({
       sessionStorage.setItem('code_verifier', codeVerifier);
       sessionStorage.setItem('oauth_state', state);
 
+      console.log('Starting OIDC flow with config:', config);
       const authUrl = buildAuthUrl(config, codeChallenge, state);
+      console.log('Redirecting to:', authUrl);
       window.location.href = authUrl;
     } catch (error) {
       console.error('Login error:', error);
@@ -227,10 +247,11 @@ export default function AuthGuard({
             ) : (
               <Button 
                 onClick={handleLogin}
+                disabled={!config}
                 className={`w-full ${styles.gradient} font-medium hover:opacity-90 transition-opacity shadow-lg`}
                 data-testid={`button-login-${application}`}
               >
-                {theme === 'jarvis' ? 'Sign in with Okta' : `Continue to ${title}`}
+                {!config ? 'Loading...' : theme === 'jarvis' ? 'Sign in with Okta' : `Continue to ${title}`}
               </Button>
             )}
           </div>

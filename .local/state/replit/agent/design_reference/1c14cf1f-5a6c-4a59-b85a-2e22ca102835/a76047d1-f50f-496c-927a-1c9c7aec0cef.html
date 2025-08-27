@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas Beverages & Jarvis - Enterprise Applications</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    'inter': ['Inter', 'sans-serif'],
+                    'orbitron': ['Orbitron', 'monospace'],
+                },
+                colors: {
+                    atlas: {
+                        blue: '#1e40af',
+                        red: '#dc2626',
+                        gray: '#64748b'
+                    },
+                    jarvis: {
+                        dark: '#0f0f23',
+                        gold: '#fbbf24',
+                        red: '#ef4444',
+                        cyan: '#06b6d4'
+                    }
+                },
+                animation: {
+                    'spin-slow': 'spin 3s linear infinite',
+                    'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    'glow': 'glow 2s ease-in-out infinite alternate',
+                },
+                keyframes: {
+                    glow: {
+                        from: { boxShadow: '0 0 5px #06b6d4, 0 0 10px #06b6d4, 0 0 15px #06b6d4' },
+                        to: { boxShadow: '0 0 10px #06b6d4, 0 0 20px #06b6d4, 0 0 30px #06b6d4' }
+                    }
+                }
+            }
+        }
+    };
+    </script>
+</head>
+<body class="font-inter bg-gray-50">
+    <!-- App Selector -->
+    <div id="app-selector" class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-900 mb-4">Enterprise Applications</h1>
+                <p class="text-lg text-gray-600">Choose your application to continue</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Atlas Beverages Card -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-atlas-blue to-blue-600 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                        <!-- Corporate building silhouette with inventory boxes -->
+                        <div class="absolute bottom-4 left-4 text-white">
+                            <i class="fas fa-building text-4xl mb-2"></i>
+                            <div class="flex space-x-2">
+                                <i class="fas fa-boxes text-lg"></i>
+                                <i class="fas fa-warehouse text-lg"></i>
+                                <i class="fas fa-truck text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Atlas Beverages</h3>
+                        <p class="text-gray-600 mb-4">Inventory Management System</p>
+                        <div class="space-y-2 mb-6">
+                            <div class="flex items-center text-sm text-gray-500">
+                                <i class="fas fa-map-marker-alt w-4 mr-2"></i>
+                                <span>Texas, California, Nevada</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <i class="fas fa-shield-alt w-4 mr-2"></i>
+                                <span>Okta OIDC + PKCE Authentication</span>
+                            </div>
+                        </div>
+                        <button onclick="showApp('inventory')" class="w-full bg-atlas-blue text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            Launch Application
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Jarvis Card -->
+                <div class="bg-gradient-to-br from-gray-900 to-jarvis-dark rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 relative">
+                    <div class="h-48 bg-gradient-to-br from-jarvis-dark via-gray-800 to-black relative overflow-hidden">
+                        <div class="absolute inset-0">
+                            <!-- Iron Man arc reactor effect -->
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                <div class="w-16 h-16 rounded-full bg-jarvis-cyan animate-pulse-slow relative">
+                                    <div class="absolute inset-2 rounded-full bg-jarvis-cyan animate-spin-slow">
+                                        <div class="absolute inset-1 rounded-full border-2 border-white border-dashed"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Tech grid pattern -->
+                            <div class="absolute inset-0 opacity-20">
+                                <div class="grid grid-cols-8 grid-rows-6 h-full">
+                                    <div class="border border-jarvis-cyan animate-pulse"></div>
+                                    <div class="border border-jarvis-gold animate-pulse delay-100"></div>
+                                    <div class="border border-jarvis-cyan animate-pulse delay-200"></div>
+                                    <div class="border border-jarvis-gold animate-pulse delay-300"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold text-jarvis-gold font-orbitron mb-2">JARVIS</h3>
+                        <p class="text-gray-300 mb-4">AI Assistant Chatbot</p>
+                        <div class="space-y-2 mb-6">
+                            <div class="flex items-center text-sm text-gray-400">
+                                <i class="fas fa-robot w-4 mr-2 text-jarvis-cyan"></i>
+                                <span>Cross-App Inventory Access</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-400">
+                                <i class="fas fa-shield-alt w-4 mr-2 text-jarvis-gold"></i>
+                                <span>JAG Token Exchange</span>
+                            </div>
+                        </div>
+                        <button onclick="showApp('jarvis')" class="w-full bg-gradient-to-r from-jarvis-gold to-jarvis-red text-black py-3 px-4 rounded-lg hover:from-yellow-400 hover:to-red-500 transition-all font-medium font-orbitron">
+                            INITIALIZE JARVIS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atlas Beverages Inventory Application -->
+    <div id="inventory-app" class="hidden min-h-screen bg-gray-50">
+        <!-- Auth Screen -->
+        <div id="inventory-auth" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-atlas-blue to-blue-700">
+            <div class="max-w-md w-full mx-auto">
+                <div class="bg-white rounded-lg shadow-2xl overflow-hidden">
+                    <div class="bg-atlas-blue px-6 py-8 text-center">
+                        <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-building text-atlas-blue text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">Atlas Beverages</h2>
+                        <p class="text-blue-100 mt-1">Inventory Management Portal</p>
+                    </div>
+                    
+                    <div class="px-6 py-8">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Secure Authentication Required</h3>
+                            <p class="text-gray-600 text-sm">Authenticating via Okta OIDC with PKCE</p>
+                        </div>
+                        
+                        <!-- Loading spinner -->
+                        <div id="inventory-loading" class="hidden text-center py-8">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-atlas-blue mx-auto"></div>
+                            <p class="text-gray-600 mt-4">Establishing secure connection...</p>
+                        </div>
+                        
+                        <div id="inventory-auth-form" class="space-y-4">
+                            <button onclick="authenticateInventory()" class="w-full bg-atlas-blue text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                <i class="fas fa-shield-alt mr-2"></i>
+                                Authenticate with Okta
+                            </button>
+                            
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500">
+                                    Domain: fcxdemo.okta.com<br>
+                                    Client ID: 0oau8x7jn10yYmlhw697
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Inventory Dashboard -->
+        <div id="inventory-dashboard" class="hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-atlas-blue rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-building text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h1 class="text-xl font-bold text-gray-900">Atlas Beverages</h1>
+                                <p class="text-sm text-gray-500">Inventory Management</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-gray-900" data-bind="user.name">Arjun Krish</p>
+                                <p class="text-xs text-gray-500" data-bind="user.email">Arjun@atko.email</p>
+                            </div>
+                            <button onclick="showAppSelector()" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                                <i class="fas fa-home"></i>
+                            </button>
+                            <button class="bg-atlas-red text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Warehouse Selection -->
+                <div class="mb-8">
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <!-- @MAP: warehouses.map(warehouse => ( -->
+                        <div class="warehouse-card bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-all" onclick="selectWarehouse('texas')">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-900">Texas Warehouse</h3>
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            </div>
+                            <div class="text-2xl font-bold text-atlas-blue mb-2" data-bind="warehouse.texas.totalItems">1,247</div>
+                            <p class="text-gray-600 text-sm">Total Items</p>
+                            <div class="mt-4 flex justify-between text-xs text-gray-500">
+                                <span>Capacity: 85%</span>
+                                <span>Last Updated: 2h ago</span>
+                            </div>
+                        </div>
+
+                        <div class="warehouse-card bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-all" onclick="selectWarehouse('california')">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-900">California Warehouse</h3>
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            </div>
+                            <div class="text-2xl font-bold text-atlas-blue mb-2" data-bind="warehouse.california.totalItems">892</div>
+                            <p class="text-gray-600 text-sm">Total Items</p>
+                            <div class="mt-4 flex justify-between text-xs text-gray-500">
+                                <span>Capacity: 62%</span>
+                                <span>Last Updated: 1h ago</span>
+                            </div>
+                        </div>
+
+                        <div class="warehouse-card bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-all" onclick="selectWarehouse('nevada')">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibent text-gray-900">Nevada Warehouse</h3>
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            </div>
+                            <div class="text-2xl font-bold text-atlas-blue mb-2" data-bind="warehouse.nevada.totalItems">634</div>
+                            <p class="text-gray-600 text-sm">Total Items</p>
+                            <div class="mt-4 flex justify-between text-xs text-gray-500">
+                                <span>Capacity: 44%</span>
+                                <span>Last Updated: 30min ago</span>
+                            </div>
+                        </div>
+                        <!-- @END_MAP -->
+                    </div>
+                </div>
+
+                <!-- Inventory Management Section -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                <span id="selected-warehouse">Texas</span> Warehouse Inventory
+                            </h2>
+                            <button onclick="showAddItemModal()" class="bg-atlas-blue text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Add Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- @MAP: inventoryItems.map(item => ( -->
+                                <tr data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                                <i class="fas fa-bottle-water text-atlas-blue"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900" data-bind="item.name">Pepsi Cola 12oz</div>
+                                                <div class="text-sm text-gray-500" data-bind="item.description">Classic cola beverage</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-bind="item.sku">PEP-12-001</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" data-bind="item.quantity">
+                                            450 units
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="item.category">Beverages</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button class="text-atlas-blue hover:text-blue-700 mr-3" data-event="click:handleEdit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-atlas-red hover:text-red-700" data-event="click:handleDelete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- @END_MAP -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Jarvis Chatbot Application -->
+    <div id="jarvis-app" class="hidden min-h-screen bg-jarvis-dark">
+        <!-- Auth Screen -->
+        <div id="jarvis-auth" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-jarvis-dark via-gray-900 to-black">
+            <div class="max-w-md w-full mx-auto">
+                <div class="bg-gradient-to-br from-gray-800 to-jarvis-dark rounded-lg shadow-2xl overflow-hidden border border-jarvis-cyan/20">
+                    <div class="px-6 py-8 text-center relative">
+                        <!-- Arc reactor animation -->
+                        <div class="w-24 h-24 mx-auto mb-6 relative">
+                            <div class="absolute inset-0 rounded-full bg-jarvis-cyan animate-pulse-slow"></div>
+                            <div class="absolute inset-2 rounded-full bg-jarvis-cyan animate-spin-slow">
+                                <div class="absolute inset-1 rounded-full border-2 border-white border-dashed"></div>
+                            </div>
+                            <div class="absolute inset-6 rounded-full bg-white flex items-center justify-center">
+                                <i class="fas fa-robot text-jarvis-cyan text-xl"></i>
+                            </div>
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-jarvis-gold font-orbitron mb-2">JARVIS</h2>
+                        <p class="text-gray-300">Just A Rather Very Intelligent System</p>
+                    </div>
+                    
+                    <div class="px-6 py-8">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-semibold text-white mb-2 font-orbitron">AUTHENTICATION REQUIRED</h3>
+                            <p class="text-gray-400 text-sm">Initializing secure connection protocols</p>
+                        </div>
+                        
+                        <!-- Loading spinner -->
+                        <div id="jarvis-loading" class="hidden text-center py-8">
+                            <div class="relative w-16 h-16 mx-auto mb-4">
+                                <div class="absolute inset-0 rounded-full border-4 border-jarvis-cyan border-t-transparent animate-spin"></div>
+                                <div class="absolute inset-2 rounded-full border-2 border-jarvis-gold border-t-transparent animate-spin animate-reverse"></div>
+                            </div>
+                            <p class="text-gray-300 font-orbitron">ESTABLISHING CONNECTION...</p>
+                        </div>
+                        
+                        <div id="jarvis-auth-form" class="space-y-4">
+                            <button onclick="authenticateJarvis()" class="w-full bg-gradient-to-r from-jarvis-gold to-jarvis-red text-black py-3 px-4 rounded-lg hover:from-yellow-400 hover:to-red-500 transition-all font-medium font-orbitron">
+                                <i class="fas fa-shield-alt mr-2"></i>
+                                INITIALIZE AUTHENTICATION
+                            </button>
+                            
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 font-orbitron">
+                                    DOMAIN: fcxdemo.okta.com<br>
+                                    CLIENT: 0oau8wb0eiLgOCT1X697
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Jarvis Interface -->
+        <div id="jarvis-dashboard" class="hidden min-h-screen">
+            <!-- Header -->
+            <header class="bg-gradient-to-r from-jarvis-dark to-gray-900 border-b border-jarvis-cyan/30">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 relative mr-4">
+                                <div class="absolute inset-0 rounded-full bg-jarvis-cyan animate-pulse"></div>
+                                <div class="absolute inset-1 rounded-full bg-jarvis-cyan animate-spin-slow">
+                                    <div class="absolute inset-1 rounded-full border border-white border-dashed"></div>
+                                </div>
+                                <div class="absolute inset-3 rounded-full bg-white flex items-center justify-center">
+                                    <i class="fas fa-robot text-jarvis-cyan text-sm"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h1 class="text-xl font-bold text-jarvis-gold font-orbitron">JARVIS</h1>
+                                <p class="text-sm text-gray-400 font-orbitron">AI ASSISTANT ONLINE</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right">
+                                <p class="text-sm font-medium text-white font-orbitron" data-bind="user.name">ARJUN KRISH</p>
+                                <p class="text-xs text-gray-400" data-bind="user.email">ARJUN@ATKO.EMAIL</p>
+                            </div>
+                            <button onclick="showAppSelector()" class="bg-gray-700 text-jarvis-gold px-3 py-2 rounded-lg hover:bg-gray-600 transition-colors font-orbitron">
+                                <i class="fas fa-home"></i>
+                            </button>
+                            <button class="bg-jarvis-red text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors font-orbitron">
+                                <i class="fas fa-power-off"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Chat Interface -->
+            <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-screen flex flex-col">
+                <!-- Chat Messages -->
+                <div class="flex-1 bg-gradient-to-br from-gray-900 to-jarvis-dark rounded-lg border border-jarvis-cyan/20 mb-6 overflow-hidden">
+                    <div id="chat-messages" class="h-full flex flex-col">
+                        <div class="flex-1 p-6 overflow-y-auto space-y-6">
+                            <!-- Initial message -->
+                            <div class="flex items-start">
+                                <div class="w-8 h-8 bg-jarvis-cyan rounded-full flex items-center justify-center mr-3 animate-pulse">
+                                    <i class="fas fa-robot text-white text-xs"></i>
+                                </div>
+                                <div class="bg-gradient-to-r from-jarvis-cyan/20 to-jarvis-gold/20 rounded-lg p-4 max-w-lg border border-jarvis-cyan/30">
+                                    <p class="text-white font-orbitron text-sm">JARVIS ONLINE. I AM NOW CONNECTED TO YOUR ATLAS BEVERAGES INVENTORY SYSTEM VIA SECURE JAG TOKEN EXCHANGE.</p>
+                                    <p class="text-gray-300 text-xs mt-2 font-orbitron">READY TO ASSIST WITH INVENTORY QUERIES AND MANAGEMENT.</p>
+                                </div>
+                            </div>
+
+                            <!-- Example chat messages -->
+                            <div class="flex items-start justify-end">
+                                <div class="bg-gradient-to-r from-jarvis-gold/20 to-jarvis-red/20 rounded-lg p-4 max-w-lg border border-jarvis-gold/30">
+                                    <p class="text-white text-sm" data-mock="true">What's the current inventory status for Texas warehouse?</p>
+                                </div>
+                                <div class="w-8 h-8 bg-jarvis-gold rounded-full flex items-center justify-center ml-3">
+                                    <i class="fas fa-user text-black text-xs"></i>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start">
+                                <div class="w-8 h-8 bg-jarvis-cyan rounded-full flex items-center justify-center mr-3 animate-pulse">
+                                    <i class="fas fa-robot text-white text-xs"></i>
+                                </div>
+                                <div class="bg-gradient-to-r from-jarvis-cyan/20 to-jarvis-gold/20 rounded-lg p-4 max-w-lg border border-jarvis-cyan/30">
+                                    <p class="text-white text-sm font-orbitron" data-mock="true">ACCESSING TEXAS WAREHOUSE DATA...</p>
+                                    <div class="mt-3 bg-black/30 rounded p-3 font-mono text-xs">
+                                        <div class="text-jarvis-gold">TEXAS WAREHOUSE STATUS:</div>
+                                        <div class="text-white mt-1">• Total Items: 1,247 units</div>
+                                        <div class="text-white">• Capacity: 85% full</div>
+                                        <div class="text-white">• Top Products: Pepsi Cola (450), Mountain Dew (380)</div>
+                                        <div class="text-jarvis-cyan">• Last Updated: 2 hours ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Input -->
+                        <div class="border-t border-jarvis-cyan/30 p-4">
+                            <div class="flex space-x-3">
+                                <div class="flex-1 relative">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ask JARVIS about inventory..." 
+                                        class="w-full bg-gray-800 text-white rounded-lg px-4 py-3 pr-12 border border-jarvis-cyan/30 focus:border-jarvis-cyan focus:outline-none font-orbitron text-sm"
+                                        onkeypress="handleChatInput(event)"
+                                    >
+                                    <button class="absolute right-3 top-1/2 transform -translate-y-1/2 text-jarvis-cyan hover:text-jarvis-gold transition-colors">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                                <button class="bg-jarvis-cyan text-black px-4 py-3 rounded-lg hover:bg-cyan-400 transition-colors font-orbitron text-sm" data-event="click:sendMessage">
+                                    SEND
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-3 gap-4">
+                    <button class="bg-gradient-to-r from-jarvis-cyan/20 to-jarvis-gold/20 text-white p-4 rounded-lg border border-jarvis-cyan/30 hover:border-jarvis-cyan transition-all font-orbitron text-sm">
+                        <i class="fas fa-warehouse block text-lg mb-2"></i>
+                        WAREHOUSE STATUS
+                    </button>
+                    <button class="bg-gradient-to-r from-jarvis-gold/20 to-jarvis-red/20 text-white p-4 rounded-lg border border-jarvis-gold/30 hover:border-jarvis-gold transition-all font-orbitron text-sm">
+                        <i class="fas fa-chart-bar block text-lg mb-2"></i>
+                        INVENTORY REPORT
+                    </button>
+                    <button class="bg-gradient-to-r from-jarvis-red/20 to-jarvis-cyan/20 text-white p-4 rounded-lg border border-jarvis-red/30 hover:border-jarvis-red transition-all font-orbitron text-sm">
+                        <i class="fas fa-plus block text-lg mb-2"></i>
+                        ADD INVENTORY
+                    </button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="add-item-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Add New Inventory Item</h3>
+                            <div class="mt-4 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Product Name</label>
+                                    <input type="text" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-atlas-blue focus:border-atlas-blue">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">SKU</label>
+                                    <input type="text" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-atlas-blue focus:border-atlas-blue">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Quantity</label>
+                                    <input type="number" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-atlas-blue focus:border-atlas-blue">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Category</label>
+                                    <select class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-atlas-blue focus:border-atlas-blue">
+                                        <option>Beverages</option>
+                                        <option>Snacks</option>
+                                        <option>Equipment</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-atlas-blue text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm" data-event="click:handleAddItem">
+                        Add Item
+                    </button>
+                    <button type="button" onclick="hideAddItemModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State Management
+        let currentApp = null;
+        let currentWarehouse = 'texas';
+        let isAuthenticated = {
+            inventory: false,
+            jarvis: false
+        };
+
+        // OIDC Configuration
+        const OKTA_CONFIG = {
+            domain: 'https://fcxdemo.okta.com',
+            inventory: {
+                clientId: '0oau8x7jn10yYmlhw697',
+                clientSecret: 'Ixvrzzgq2jZ4BCdbKXI9YxD0kTwEWpajWDWZcj2niXLJJIoBOjLKKePP4Qf1efDK',
+                redirectUri: window.location.origin + '/inventory/callback'
+            },
+            jarvis: {
+                clientId: '0oau8wb0eiLgOCT1X697',
+                clientSecret: 'e6DQE5cSnD3qCYx6BpfBDLzNgZrI-wRobgrcpz4ylyKfBhv7ljkRZcrLuTk_Innt',
+                redirectUri: window.location.origin + '/jarvis/callback'
+            }
+        };
+
+        // App Navigation
+        function showApp(appName) {
+            document.getElementById('app-selector').classList.add('hidden');
+            
+            if (appName === 'inventory') {
+                document.getElementById('inventory-app').classList.remove('hidden');
+                currentApp = 'inventory';
+                
+                if (!isAuthenticated.inventory) {
+                    document.getElementById('inventory-auth').classList.remove('hidden');
+                    document.getElementById('inventory-dashboard').classList.add('hidden');
+                } else {
+                    document.getElementById('inventory-auth').classList.add('hidden');
+                    document.getElementById('inventory-dashboard').classList.remove('hidden');
+                }
+            } else if (appName === 'jarvis') {
+                document.getElementById('jarvis-app').classList.remove('hidden');
+                currentApp = 'jarvis';
+                
+                if (!isAuthenticated.jarvis) {
+                    document.getElementById('jarvis-auth').classList.remove('hidden');
+                    document.getElementById('jarvis-dashboard').classList.add('hidden');
+                } else {
+                    document.getElementById('jarvis-auth').classList.add('hidden');
+                    document.getElementById('jarvis-dashboard').classList.remove('hidden');
+                }
+            }
+        }
+
+        function showAppSelector() {
+            document.getElementById('app-selector').classList.remove('hidden');
+            document.getElementById('inventory-app').classList.add('hidden');
+            document.getElementById('jarvis-app').classList.add('hidden');
+            currentApp = null;
+        }
+
+        // Authentication Functions
+        function authenticateInventory() {
+            document.getElementById('inventory-auth-form').classList.add('hidden');
+            document.getElementById('inventory-loading').classList.remove('hidden');
+            
+            // TODO: Implement OIDC PKCE flow
+            // generateCodeChallenge()
+            // redirectToOkta(OKTA_CONFIG.inventory)
+            
+            // Simulate authentication
+            setTimeout(() => {
+                isAuthenticated.inventory = true;
+                document.getElementById('inventory-auth').classList.add('hidden');
+                document.getElementById('inventory-dashboard').classList.remove('hidden');
+            }, 3000);
+        }
+
+        function authenticateJarvis() {
+            document.getElementById('jarvis-auth-form').classList.add('hidden');
+            document.getElementById('jarvis-loading').classList.remove('hidden');
+            
+            // TODO: Implement OIDC PKCE flow
+            // generateCodeChallenge()
+            // redirectToOkta(OKTA_CONFIG.jarvis)
+            
+            // Simulate authentication
+            setTimeout(() => {
+                isAuthenticated.jarvis = true;
+                document.getElementById('jarvis-auth').classList.add('hidden');
+                document.getElementById('jarvis-dashboard').classList.remove('hidden');
+            }, 3000);
+        }
+
+        // Warehouse Selection
+        function selectWarehouse(warehouse) {
+            currentWarehouse = warehouse;
+            document.getElementById('selected-warehouse').textContent = warehouse.charAt(0).toUpperCase() + warehouse.slice(1);
+            
+            // Update visual selection
+            document.querySelectorAll('.warehouse-card').forEach(card => {
+                card.classList.remove('ring-2', 'ring-atlas-blue');
+            });
+            event.currentTarget.classList.add('ring-2', 'ring-atlas-blue');
+            
+            // TODO: Load warehouse specific inventory
+            loadWarehouseInventory(warehouse);
+        }
+
+        function loadWarehouseInventory(warehouse) {
+            // TODO: Fetch inventory data for specific warehouse
+            console.log(`Loading inventory for ${warehouse} warehouse`);
+        }
+
+        // Modal Functions
+        function showAddItemModal() {
+            document.getElementById('add-item-modal').classList.remove('hidden');
+        }
+
+        function hideAddItemModal() {
+            document.getElementById('add-item-modal').classList.add('hidden');
+        }
+
+        // Chat Functions
+        function handleChatInput(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        function sendChatMessage() {
+            const input = event.target.previousElementSibling || document.querySelector('input[placeholder*="Ask JARVIS"]');
+            const message = input.value.trim();
+            
+            if (message) {
+                // TODO: Process chat message and implement JAG token exchange for cross-app access
+                // exchangeTokenForJAG()
+                // queryInventoryData(message)
+                
+                input.value = '';
+                console.log('Chat message:', message);
+            }
+        }
+
+        // TODO: Implement PKCE Helper Functions
+        function generateCodeChallenge() {
+            // Generate PKCE code verifier and challenge
+        }
+
+        function redirectToOkta(config) {
+            // Redirect to Okta for authentication
+        }
+
+        function handleOktaCallback() {
+            // Handle Okta callback and exchange code for tokens
+        }
+
+        function exchangeTokenForJAG() {
+            // Implement JAG token exchange as per the provided curl example
+            // POST to https://fcxdemo.okta.com/oauth2/v1/token
+            // with grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+        }
+
+        // Initialize app on load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Atlas Beverages & Jarvis Applications Initialized');
+        });
+    </script>
+</body>
+</html>

@@ -229,6 +229,88 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Token exchange endpoint for J.A.R.V.I.S to get JAG tokens
+app.post('/api/auth/token-exchange', async (req, res) => {
+  console.log('=== Token Exchange Request ===');
+  console.log('Request body:', req.body);
+  console.log('Headers:', req.headers);
+  
+  try {
+    const { targetApp } = req.body;
+    const authHeader = req.headers.authorization;
+    
+    console.log('Token exchange parameters:', { 
+      targetApp,
+      authHeader: authHeader ? 'present' : 'missing'
+    });
+    
+    if (targetApp !== 'inventory') {
+      return res.status(400).json({ error: "Only inventory app access is supported" });
+    }
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: "Bearer token required" });
+    }
+
+    const idToken = authHeader.substring(7); // Remove "Bearer " prefix
+    
+    // Get Okta configuration from environment
+    const oktaDomainRaw = process.env.OKTA_DOMAIN || "fcxdemo.okta.com";
+    const authServer = process.env.OKTA_AUTHORIZATION_SERVER || "https://fcxdemo.okta.com/oauth2";
+    const oktaDomain = authServer.includes('://') ? authServer.split('://')[1].split('/')[0] : oktaDomainRaw;
+    const jarvisClientId = process.env.JARVIS_CLIENT_ID || "0oau8wb0eiLgOCT1X697";
+    const inventoryClientId = process.env.INVENTORY_CLIENT_ID || "0oau8x7jn10yYmlhw697";
+    
+    console.log('Using Okta configuration for token exchange:', { oktaDomain, jarvisClientId: jarvisClientId.substring(0, 10) + '...' });
+
+    // Exchange JAG token using OAuth 2.0 Token Exchange (RFC 8693)
+    const tokenUrl = `https://${oktaDomain}/oauth2/v1/token`;
+    console.log('Token exchange URL:', tokenUrl);
+    
+    try {
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+          subject_token: idToken,
+          subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+          audience: inventoryClientId,
+          requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+          client_id: jarvisClientId,
+        })
+      });
+
+      console.log('Token exchange response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Token exchange failed:', errorText);
+        return res.status(401).json({ error: 'Token exchange failed', details: errorText });
+      }
+
+      const exchangeResult = await response.json();
+      console.log('Token exchange successful');
+      
+      res.json({
+        success: true,
+        jagToken: exchangeResult.access_token,
+        expiresIn: exchangeResult.expires_in || 3600,
+        tokenType: exchangeResult.token_type || 'Bearer',
+        issuedTokenType: exchangeResult.issued_token_type,
+      });
+    } catch (fetchError) {
+      console.error('Fetch error during token exchange:', fetchError);
+      return res.status(500).json({ error: 'Network error during token exchange' });
+    }
+  } catch (error) {
+    console.error('Token exchange error:', error);
+    res.status(500).json({ error: "Token exchange failed" });
+  }
+});
+
 // Inventory endpoints
 app.get('/api/warehouses', (req, res) => {
   const warehouses = Array.from(storage.warehouses.values());

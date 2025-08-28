@@ -464,6 +464,15 @@ app.post('/mcp/inventory/query', (req, res) => {
       warehouse,
       totalItems: items.length,
       totalValue: items.reduce((sum, item) => sum + (item.quantity * item.price), 0),
+      items: items.map(item => ({
+        id: item.id,
+        name: item.name,
+        sku: item.sku,
+        quantity: item.quantity,
+        minStockLevel: item.minStock,
+        category: item.category,
+        price: item.price
+      })),
       lowStockItems: lowStockItems.map(item => ({
         name: item.name,
         currentStock: item.quantity,

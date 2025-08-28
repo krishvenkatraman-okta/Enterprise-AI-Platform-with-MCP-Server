@@ -125,6 +125,7 @@ export default function ChatInterface() {
         // Auto-display inventory data when first fetched after authentication
         const hasDisplayedInventory = localStorage.getItem('has_displayed_inventory');
         if (!hasDisplayedInventory && hasAccessToken) {
+          console.log('=== Auto-displaying inventory data ===', { inventoryData });
           localStorage.setItem('has_displayed_inventory', 'true');
           setTimeout(() => {
             addMessage({
@@ -133,6 +134,8 @@ export default function ChatInterface() {
               inventoryData,
             });
           }, 1000);
+        } else {
+          console.log('=== Skipping auto-display ===', { hasDisplayedInventory, hasAccessToken });
         }
       }
     }
@@ -208,6 +211,7 @@ export default function ChatInterface() {
       
       // Trigger inventory data fetch after authentication
       setTimeout(() => {
+        console.log('=== Triggering inventory query after authentication ===');
         queryClient.refetchQueries({ queryKey: ["/mcp/inventory/query"] });
       }, 500);
     },

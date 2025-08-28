@@ -538,7 +538,7 @@ export default function ChatInterface() {
   };
 
   const suggestedQuestions = [
-    "Show West Coast warehouse inventory",
+    "westcoast",
     "Check Central Hub status", 
     "Low stock analysis",
     "Show all warehouse status"

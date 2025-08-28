@@ -204,6 +204,8 @@ export default function ChatInterface() {
       const pendingState = localStorage.getItem('pending_warehouse_request');
       const pendingWarehouseName = localStorage.getItem('pending_warehouse_name');
       
+      console.log('🔍 Checking for pending requests:', { pendingState, pendingWarehouseName });
+      
       if (pendingState && pendingWarehouseName) {
         // Clear the pending request
         localStorage.removeItem('pending_warehouse_request');
@@ -287,6 +289,7 @@ export default function ChatInterface() {
         }, 1000);
       } else {
         // No pending request - just trigger general inventory if needed
+        console.log('❌ No pending request found after authentication');
         setTimeout(() => {
           console.log('=== No pending request, triggering general inventory query ===');
           queryClient.refetchQueries({ queryKey: ["/mcp/inventory/query"] });
@@ -310,8 +313,16 @@ export default function ChatInterface() {
       content: `Good ${getTimeOfDay()}, ${authService.getState().user?.firstName}. I'm J.A.R.V.I.S, your AI assistant with enterprise access to Atlas Beverages inventory system. How can I assist you today?`,
     });
     
-    // Clear any previous auto-display flag on fresh load
+    // Clear any previous flags on fresh load
     localStorage.removeItem('has_displayed_inventory');
+    
+    // Clear any stale pending requests from previous sessions
+    const existingPending = localStorage.getItem('pending_warehouse_request');
+    if (existingPending) {
+      console.log('🧹 Clearing stale pending request:', existingPending);
+      localStorage.removeItem('pending_warehouse_request');
+      localStorage.removeItem('pending_warehouse_name');
+    }
     
     // Note: Token exchange will happen only when inventory data is requested
   }, []);
@@ -405,8 +416,15 @@ export default function ChatInterface() {
             content: 'I need to establish cross-app access first. Let me authenticate with the inventory system...',
           });
           // Store the requested state for specific display after token exchange
+          console.log('💾 Storing pending request:', { state, warehouseName });
           localStorage.setItem('pending_warehouse_request', state);
           localStorage.setItem('pending_warehouse_name', warehouseName);
+          
+          // Verify storage
+          const stored1 = localStorage.getItem('pending_warehouse_request');
+          const stored2 = localStorage.getItem('pending_warehouse_name');
+          console.log('✅ Verified stored values:', { stored1, stored2 });
+          
           jagTokenMutation.mutate();
           return;
         }

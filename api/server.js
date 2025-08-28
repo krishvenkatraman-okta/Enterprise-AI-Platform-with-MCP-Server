@@ -328,13 +328,47 @@ app.post('/api/auth/token-exchange', async (req, res) => {
       // Try the exact same approach as the working oktaService implementation
       console.log('Making token exchange request with body as string:', requestBody.toString());
       
-      const response = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: requestBody.toString() // Use .toString() like the working implementation
-      });
+      // Test with axios first like the working implementation
+      let response;
+      try {
+        console.log('Attempting with axios (like working implementation)...');
+        
+        // Import axios dynamically for Vercel compatibility
+        const axios = (await import('axios')).default;
+        
+        const axiosResponse = await axios.post(tokenUrl, requestBody.toString(), {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          timeout: 10000
+        });
+        
+        console.log('Axios token exchange successful, status:', axiosResponse.status);
+        const exchangeResult = axiosResponse.data;
+        
+        res.json({
+          success: true,
+          jagToken: exchangeResult.access_token,
+          expiresIn: exchangeResult.expires_in || 3600,
+          tokenType: exchangeResult.token_type || 'Bearer',
+          issuedTokenType: exchangeResult.issued_token_type,
+        });
+        return;
+        
+      } catch (axiosError) {
+        console.error('Axios failed, falling back to fetch:', axiosError.response?.data || axiosError.message);
+        
+        // Fallback to fetch like the working implementation
+        response = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: requestBody // Use URLSearchParams object for fetch fallback
+        });
+      }
+
+      console.log('Token exchange response status:', response.status);
 
       console.log('Token exchange response status:', response.status);
 

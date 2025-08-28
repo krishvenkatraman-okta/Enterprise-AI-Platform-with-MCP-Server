@@ -453,13 +453,13 @@ app.post('/mcp/inventory/query', (req, res) => {
     });
   }
   
-  const { type, warehouseState } = req.body;
+  const { type, filters } = req.body;
   let warehouses = Array.from(storage.warehouses.values());
   
   // Filter warehouses based on request type
-  if (type === 'warehouse_specific' && warehouseState) {
-    warehouses = warehouses.filter(w => w.state === warehouseState);
-    console.log(`Filtering for warehouse state: ${warehouseState}`);
+  if (type === 'warehouse' && filters?.state) {
+    warehouses = warehouses.filter(w => w.state === filters.state);
+    console.log(`Filtering for warehouse state: ${filters.state}`);
   }
   
   const inventoryData = warehouses.map(warehouse => {

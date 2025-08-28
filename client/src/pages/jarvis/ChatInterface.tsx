@@ -122,9 +122,9 @@ export default function ChatInterface() {
           }, 500);
         }
       } else {
-        // Auto-display inventory data when first fetched after authentication
+        // Auto-display inventory data when first fetched after authentication (ONLY for full inventory queries)
         const hasDisplayedInventory = localStorage.getItem('has_displayed_inventory');
-        if (!hasDisplayedInventory && hasAccessToken && inventoryData.length > 0) {
+        if (!hasDisplayedInventory && hasAccessToken && inventoryData.length === 3) { // Only auto-display when we have all 3 warehouses
           console.log('=== Auto-displaying inventory data ===', { inventoryData, hasAccessToken });
           localStorage.setItem('has_displayed_inventory', 'true');
           setTimeout(() => {
@@ -349,16 +349,28 @@ export default function ChatInterface() {
                 'Authorization': `Bearer ${applicationToken}`
               },
               body: JSON.stringify({
-                type: 'warehouse_specific',
-                warehouseState: state
+                type: 'warehouse',
+                filters: {
+                  state: state
+                }
               })
             });
             
             if (response.ok) {
               const mcpResponse = await response.json();
-              const warehouseData = mcpResponse.data[0]; // Should be single warehouse
+              console.log('Specific warehouse response:', mcpResponse);
               
-              if (warehouseData) {
+              // Handle the actual MCP server response format
+              if (mcpResponse.success && mcpResponse.data) {
+                const warehouseData = {
+                  warehouse: mcpResponse.data.warehouse,
+                  totalItems: mcpResponse.data.totalItems,
+                  totalValue: mcpResponse.data.items.reduce((sum, item) => sum + (item.quantity * item.price), 0),
+                  items: mcpResponse.data.items,
+                  lowStockItems: mcpResponse.data.lowStockItems,
+                  recentActivity: []
+                };
+                
                 addMessage({
                   type: 'jarvis',
                   content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,

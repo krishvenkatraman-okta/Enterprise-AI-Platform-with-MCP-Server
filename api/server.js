@@ -493,10 +493,54 @@ app.post('/mcp/inventory/query', (req, res) => {
 
   console.log(`Returning inventory data for ${warehouses.length} warehouses (type: ${type})`);
   
-  // Return data in the format expected by the frontend
-  res.json({
-    data: inventoryData
-  });
+  // For warehouse-specific queries, return single warehouse in MCP server format
+  if (type === 'warehouse' && warehouses.length === 1) {
+    const warehouse = warehouses[0];
+    const items = Array.from(storage.inventoryItems.values())
+      .filter(item => item.warehouseId === warehouse.id);
+    
+    const lowStockItems = items.filter(item => item.quantity <= item.minStock);
+    
+    res.json({
+      success: true,
+      queryType: 'warehouse',
+      data: {
+        warehouse,
+        items: items.map(item => ({
+          id: item.id,
+          warehouseId: item.warehouseId,
+          name: item.name,
+          sku: item.sku,
+          category: item.category,
+          quantity: item.quantity,
+          minStockLevel: item.minStock,
+          price: item.price,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt
+        })),
+        totalItems: items.length,
+        lowStockItems: lowStockItems.map(item => ({
+          id: item.id,
+          warehouseId: item.warehouseId,
+          name: item.name,
+          sku: item.sku,
+          category: item.category,
+          quantity: item.quantity,
+          minStockLevel: item.minStock,
+          price: item.price,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt
+        }))
+      },
+      timestamp: new Date().toISOString(),
+      source: 'mcp-inventory-server'
+    });
+  } else {
+    // Return data in the old format for backward compatibility
+    res.json({
+      data: inventoryData
+    });
+  }
 });
 
 // External MCP endpoint

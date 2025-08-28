@@ -213,6 +213,7 @@ export default function ChatInterface() {
         setTimeout(async () => {
           console.log('=== Processing pending warehouse request ===');
           console.log('Pending state:', pendingState, 'Pending warehouse:', pendingWarehouseName);
+          console.log('Current URL:', window.location.href);
           
           try {
             const applicationToken = localStorage.getItem('application_token');
@@ -239,6 +240,8 @@ export default function ChatInterface() {
               console.log('Pending warehouse query response:', mcpResponse);
               
               if (mcpResponse.success && mcpResponse.data) {
+                console.log('✅ MCP Response data structure:', mcpResponse.data);
+                
                 const warehouseData = {
                   warehouse: mcpResponse.data.warehouse,
                   totalItems: mcpResponse.data.totalItems,
@@ -249,6 +252,7 @@ export default function ChatInterface() {
                 };
                 
                 console.log('✅ Successfully processed pending warehouse data:', warehouseData.warehouse.name);
+                console.log('📊 Warehouse data object:', warehouseData);
                 
                 addMessage({
                   type: 'jarvis',
@@ -270,11 +274,14 @@ export default function ChatInterface() {
                 content: `Error retrieving ${pendingWarehouseName} data: ${response.status}. Please try again.`,
               });
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('❌ Failed pending warehouse request:', error);
+            console.error('❌ Error name:', error.name);
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Error stack:', error.stack);
             addMessage({
               type: 'jarvis',
-              content: `Network error retrieving ${pendingWarehouseName} data. Please try your request again.`,
+              content: `Network error retrieving ${pendingWarehouseName} data: ${error.message}. Please try your request again.`,
             });
           }
         }, 1000);

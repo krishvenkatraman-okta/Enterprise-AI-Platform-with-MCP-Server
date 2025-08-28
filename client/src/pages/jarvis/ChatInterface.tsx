@@ -53,7 +53,7 @@ export default function ChatInterface() {
 
   const { data: inventoryData, error: inventoryError, isLoading: inventoryLoading } = useQuery<InventoryData[]>({
     queryKey: ["/mcp/inventory/query"],
-    enabled: hasAccessToken,
+    enabled: false, // Disable auto-fetching to prevent showing all warehouses
     queryFn: async () => {
       console.log('=== Frontend: Fetching inventory data ===');
       const applicationToken = localStorage.getItem('application_token');
@@ -106,37 +106,28 @@ export default function ChatInterface() {
   useEffect(() => {
     console.log('Inventory data changed:', { inventoryData, hasAccessToken, inventoryLoading });
     
-    if (inventoryData && Array.isArray(inventoryData) && inventoryData.length > 0) {
+    // Handle pending warehouse requests after authentication
+    if (hasAccessToken) {
       const pendingRequest = localStorage.getItem('pending_warehouse_request');
-      if (pendingRequest) {
+      const pendingWarehouseName = localStorage.getItem('pending_warehouse_name');
+      
+      if (pendingRequest && pendingWarehouseName) {
+        console.log('Processing pending warehouse request:', pendingRequest);
         localStorage.removeItem('pending_warehouse_request');
+        localStorage.removeItem('pending_warehouse_name');
         
-        const warehouseData = inventoryData.find(w => w.warehouse.state === pendingRequest);
-        if (warehouseData) {
-          setTimeout(() => {
-            addMessage({
-              type: 'jarvis',
-              content: `Here's the current inventory status for ${warehouseData.warehouse.name}:`,
-              inventoryData: [warehouseData],
-            });
-          }, 500);
-        }
-      } else {
-        // Auto-display inventory data when first fetched after authentication (ONLY for full inventory queries)
-        const hasDisplayedInventory = localStorage.getItem('has_displayed_inventory');
-        if (!hasDisplayedInventory && hasAccessToken && inventoryData.length === 3) { // Only auto-display when we have all 3 warehouses
-          console.log('=== Auto-displaying inventory data ===', { inventoryData, hasAccessToken });
-          localStorage.setItem('has_displayed_inventory', 'true');
-          setTimeout(() => {
-            addMessage({
-              type: 'jarvis',
-              content: `I've accessed the Atlas Beverages inventory system through cross-app authentication. Here's the current status across all warehouses:`,
-              inventoryData,
-            });
-          }, 500);
-        } else {
-          console.log('=== Skipping auto-display ===', { hasDisplayedInventory, hasAccessToken, dataLength: inventoryData?.length });
-        }
+        // Trigger the specific warehouse request by simulating user input
+        setTimeout(() => {
+          const messageMap = {
+            'California': 'Show West Coast warehouse inventory',
+            'Texas': 'Check Central Hub status',
+            'Nevada': 'Show Desert Springs inventory'
+          };
+          
+          const message = messageMap[pendingRequest as keyof typeof messageMap] || `Show ${pendingWarehouseName} warehouse inventory`;
+          setInputValue(message);
+          handleSendMessage({ target: { textContent: message } });
+        }, 1000);
       }
     }
   }, [inventoryData, hasAccessToken, inventoryLoading]);
@@ -326,18 +317,13 @@ export default function ChatInterface() {
             type: 'jarvis',
             content: 'I need to establish cross-app access first. Let me authenticate with the inventory system...',
           });
-          // Store the requested state for auto-display after token exchange
+          // Store the requested state for specific display after token exchange
           localStorage.setItem('pending_warehouse_request', state);
+          localStorage.setItem('pending_warehouse_name', warehouseName);
           jagTokenMutation.mutate();
           return;
         }
 
-        // Make a specific request for this warehouse state
-        addMessage({
-          type: 'jarvis',
-          content: `Let me fetch the current inventory data for ${warehouseName}...`,
-        });
-        
         // Fetch specific warehouse data
         const fetchSpecificWarehouse = async () => {
           try {
@@ -356,6 +342,8 @@ export default function ChatInterface() {
               })
             });
             
+            console.log('Specific warehouse request for state:', state);
+            
             if (response.ok) {
               const mcpResponse = await response.json();
               console.log('Specific warehouse response:', mcpResponse);
@@ -365,7 +353,7 @@ export default function ChatInterface() {
                 const warehouseData = {
                   warehouse: mcpResponse.data.warehouse,
                   totalItems: mcpResponse.data.totalItems,
-                  totalValue: mcpResponse.data.items.reduce((sum, item) => sum + (item.quantity * item.price), 0),
+                  totalValue: mcpResponse.data.items.reduce((sum: number, item: any) => sum + (item.quantity * item.price), 0),
                   items: mcpResponse.data.items,
                   lowStockItems: mcpResponse.data.lowStockItems,
                   recentActivity: []
@@ -376,7 +364,19 @@ export default function ChatInterface() {
                   content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
                   inventoryData: [warehouseData],
                 });
+              } else {
+                addMessage({
+                  type: 'jarvis',
+                  content: `No inventory data found for ${warehouseName}. The warehouse might not be in our system.`,
+                });
               }
+            } else {
+              const errorText = await response.text();
+              console.error('Warehouse query failed:', errorText);
+              addMessage({
+                type: 'jarvis',
+                content: `I encountered an issue accessing ${warehouseName} data: ${errorText}`,
+              });
             }
           } catch (error) {
             console.error('Failed to fetch specific warehouse:', error);
@@ -389,21 +389,18 @@ export default function ChatInterface() {
         
         fetchSpecificWarehouse();
       } else if (lowerMessage.includes('low stock') || lowerMessage.includes('reorder')) {
-        const allLowStock = inventoryData?.flatMap(w => 
-          w.lowStockItems.map(item => ({ ...item, warehouse: w.warehouse.name }))
-        ) || [];
-
-        if (allLowStock.length > 0) {
+        addMessage({
+          type: 'jarvis',
+          content: 'Let me check the low stock levels across all warehouses for you...',
+        });
+        
+        // For now, provide a general response about low stock functionality
+        setTimeout(() => {
           addMessage({
             type: 'jarvis',
-            content: `I've identified ${allLowStock.length} items with low stock levels that require immediate attention. These items are below their minimum stock thresholds and should be reordered soon.`,
+            content: 'Low stock analysis requires accessing inventory data from all warehouses. You can ask me to check specific warehouses first, and I\'ll identify any items that need reordering.',
           });
-        } else {
-          addMessage({
-            type: 'jarvis',
-            content: 'Great news! All inventory items are currently above their minimum stock levels. No immediate reorders are required.',
-          });
-        }
+        }, 1000);
       } else if (lowerMessage.includes('help') || lowerMessage.includes('what can you do')) {
         addMessage({
           type: 'jarvis',

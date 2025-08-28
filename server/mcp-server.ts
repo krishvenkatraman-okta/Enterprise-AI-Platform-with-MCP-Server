@@ -112,7 +112,7 @@ async function validateJagToken(jagToken: string): Promise<any> {
     return decoded;
   } catch (error) {
     console.error('JAG token validation failed:', error);
-    throw new Error(`JWT validation failed: ${error.message}`);
+    throw new Error(`JWT validation failed: ${(error as Error).message}`);
   }
 }
 
@@ -609,4 +609,4 @@ app.get('/mcp/config', (req, res) => {
   });
 });
 
-export { app as mcpServer, MCP_CLIENT_CONFIG };
+export { app as mcpServer };

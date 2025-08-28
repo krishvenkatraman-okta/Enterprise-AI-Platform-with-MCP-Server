@@ -381,7 +381,7 @@ export default function ChatInterface() {
           queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
         }
       } else if (lowerMessage.includes('texas') || lowerMessage.includes('california') || lowerMessage.includes('nevada') ||
-                 lowerMessage.includes('west coast') || lowerMessage.includes('central') || lowerMessage.includes('desert')) {
+                 lowerMessage.includes('west coast') || lowerMessage.includes('westcoast') || lowerMessage.includes('central') || lowerMessage.includes('desert')) {
         // Map user input to warehouse states and names
         let state = '';
         let warehouseName = '';
@@ -389,7 +389,7 @@ export default function ChatInterface() {
         if (lowerMessage.includes('texas') || lowerMessage.includes('central')) {
           state = 'Texas';
           warehouseName = 'Central Distribution Hub';
-        } else if (lowerMessage.includes('california') || lowerMessage.includes('west coast')) {
+        } else if (lowerMessage.includes('california') || lowerMessage.includes('west coast') || lowerMessage.includes('westcoast')) {
           state = 'California'; 
           warehouseName = 'West Coast Distribution';
         } else if (lowerMessage.includes('nevada') || lowerMessage.includes('desert')) {

@@ -133,7 +133,7 @@ export default function ChatInterface() {
               content: `I've accessed the Atlas Beverages inventory system through cross-app authentication. Here's the current status across all warehouses:`,
               inventoryData,
             });
-          }, 1000);
+          }, 1500);
         } else {
           console.log('=== Skipping auto-display ===', { hasDisplayedInventory, hasAccessToken });
         }
@@ -213,7 +213,7 @@ export default function ChatInterface() {
       setTimeout(() => {
         console.log('=== Triggering inventory query after authentication ===');
         queryClient.refetchQueries({ queryKey: ["/mcp/inventory/query"] });
-      }, 500);
+      }, 1000);
     },
     onError: (error) => {
       console.error('MCP Token Exchange Error:', error);
@@ -342,6 +342,7 @@ export default function ChatInterface() {
             type: 'jarvis',
             content: `I don't have access to ${warehouseName} data at the moment. Let me refresh the inventory information.`,
           });
+          queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
         }
       } else if (lowerMessage.includes('low stock') || lowerMessage.includes('reorder')) {
         const allLowStock = inventoryData?.flatMap(w => 

@@ -108,13 +108,13 @@ export default function ChatInterface() {
     
     // Handle pending warehouse requests after authentication
     if (hasAccessToken) {
-      const pendingRequest = localStorage.getItem('pending_warehouse_request');
-      const pendingWarehouseName = localStorage.getItem('pending_warehouse_name');
+      const pendingRequest = sessionStorage.getItem('pending_warehouse_request');
+      const pendingWarehouseName = sessionStorage.getItem('pending_warehouse_name');
       
       if (pendingRequest && pendingWarehouseName) {
         console.log('Processing pending warehouse request:', pendingRequest);
-        localStorage.removeItem('pending_warehouse_request');
-        localStorage.removeItem('pending_warehouse_name');
+        sessionStorage.removeItem('pending_warehouse_request');
+        sessionStorage.removeItem('pending_warehouse_name');
         
         // Trigger the specific warehouse request by simulating user input
         setTimeout(() => {
@@ -125,8 +125,7 @@ export default function ChatInterface() {
           };
           
           const message = messageMap[pendingRequest as keyof typeof messageMap] || `Show ${pendingWarehouseName} warehouse inventory`;
-          setInputValue(message);
-          handleSendMessage({ target: { textContent: message } });
+          processUserMessage(message);
         }, 1000);
       }
     }
@@ -278,12 +277,12 @@ export default function ChatInterface() {
             }
           } catch (error: any) {
             console.error('❌ Failed pending warehouse request:', error);
-            console.error('❌ Error name:', error.name);
-            console.error('❌ Error message:', error.message);
-            console.error('❌ Error stack:', error.stack);
+            console.error('❌ Error name:', error?.name || 'Unknown');
+            console.error('❌ Error message:', error?.message || 'Unknown error');
+            console.error('❌ Error stack:', error?.stack || 'No stack trace');
             addMessage({
               type: 'jarvis',
-              content: `Network error retrieving ${pendingWarehouseName} data: ${error.message}. Please try your request again.`,
+              content: `Network error retrieving ${pendingWarehouseName} data: ${error?.message || 'Unknown error'}. Please try your request again.`,
             });
           }
         }, 1000);
@@ -513,17 +512,17 @@ export default function ChatInterface() {
                 content: `I encountered an issue accessing ${warehouseName} data: ${response.status} - ${errorText}`,
               });
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('❌ Failed to fetch specific warehouse:', error);
             console.error('Error details:', {
-              message: error.message,
-              stack: error.stack,
+              message: error?.message || 'Unknown error',
+              stack: error?.stack || 'No stack trace',
               state: state,
               warehouseName: warehouseName
             });
             addMessage({
               type: 'jarvis',
-              content: `Network error accessing ${warehouseName} data: ${error.message}. Please check your connection and try again.`,
+              content: `Network error accessing ${warehouseName} data: ${error?.message || 'Unknown error'}. Please check your connection and try again.`,
             });
           }
         }, 800);

@@ -124,8 +124,8 @@ export default function ChatInterface() {
       } else {
         // Auto-display inventory data when first fetched after authentication
         const hasDisplayedInventory = localStorage.getItem('has_displayed_inventory');
-        if (!hasDisplayedInventory && hasAccessToken) {
-          console.log('=== Auto-displaying inventory data ===', { inventoryData });
+        if (!hasDisplayedInventory && hasAccessToken && inventoryData.length > 0) {
+          console.log('=== Auto-displaying inventory data ===', { inventoryData, hasAccessToken });
           localStorage.setItem('has_displayed_inventory', 'true');
           setTimeout(() => {
             addMessage({
@@ -133,9 +133,9 @@ export default function ChatInterface() {
               content: `I've accessed the Atlas Beverages inventory system through cross-app authentication. Here's the current status across all warehouses:`,
               inventoryData,
             });
-          }, 1500);
+          }, 500);
         } else {
-          console.log('=== Skipping auto-display ===', { hasDisplayedInventory, hasAccessToken });
+          console.log('=== Skipping auto-display ===', { hasDisplayedInventory, hasAccessToken, dataLength: inventoryData?.length });
         }
       }
     }
@@ -231,6 +231,9 @@ export default function ChatInterface() {
       type: 'jarvis',
       content: `Good ${getTimeOfDay()}, ${authService.getState().user?.firstName}. I'm J.A.R.V.I.S, your AI assistant with enterprise access to Atlas Beverages inventory system. How can I assist you today?`,
     });
+    
+    // Clear any previous auto-display flag on fresh load
+    localStorage.removeItem('has_displayed_inventory');
     
     // Note: Token exchange will happen only when inventory data is requested
   }, []);

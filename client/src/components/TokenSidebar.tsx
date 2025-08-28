@@ -36,7 +36,9 @@ export default function TokenSidebar({ isOpen, onClose }: TokenSidebarProps) {
   
   const { data: sessionData } = useQuery<SessionData>({
     queryKey: ["/api/auth/sessions"],
-    enabled: authState.isAuthenticated,
+    enabled: false, // Temporarily disabled to prevent 404 errors
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   // Get current session tokens only - clear stale tokens on auth state change

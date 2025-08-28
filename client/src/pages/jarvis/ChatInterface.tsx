@@ -119,7 +119,7 @@ export default function ChatInterface() {
     onSuccess: (data) => {
       setJagToken(data.jagToken);
       localStorage.setItem('jag_token', data.jagToken);
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
+      // queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] }); // Disabled to prevent 404s
       
       addMessage({
         type: 'system',
@@ -169,7 +169,7 @@ export default function ChatInterface() {
       setHasAccessToken(true);
       localStorage.setItem('application_token', data.access_token);
       queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] });
+      // queryClient.invalidateQueries({ queryKey: ["/api/auth/sessions"] }); // Disabled to prevent 404s
       
       addMessage({
         type: 'system',

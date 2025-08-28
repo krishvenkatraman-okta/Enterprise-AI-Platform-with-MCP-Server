@@ -332,21 +332,50 @@ export default function ChatInterface() {
           return;
         }
 
-        const warehouseData = inventoryData?.find(w => w.warehouse.state === state);
+        // Make a specific request for this warehouse state
+        addMessage({
+          type: 'jarvis',
+          content: `Let me fetch the current inventory data for ${warehouseName}...`,
+        });
         
-        if (warehouseData) {
-          addMessage({
-            type: 'jarvis',
-            content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
-            inventoryData: [warehouseData],
-          });
-        } else {
-          addMessage({
-            type: 'jarvis',
-            content: `I don't have access to ${warehouseName} data at the moment. Let me refresh the inventory information.`,
-          });
-          queryClient.invalidateQueries({ queryKey: ["/mcp/inventory/query"] });
-        }
+        // Fetch specific warehouse data
+        const fetchSpecificWarehouse = async () => {
+          try {
+            const applicationToken = localStorage.getItem('application_token');
+            const response = await fetch('/mcp/inventory/query', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${applicationToken}`
+              },
+              body: JSON.stringify({
+                type: 'warehouse_specific',
+                warehouseState: state
+              })
+            });
+            
+            if (response.ok) {
+              const mcpResponse = await response.json();
+              const warehouseData = mcpResponse.data[0]; // Should be single warehouse
+              
+              if (warehouseData) {
+                addMessage({
+                  type: 'jarvis',
+                  content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
+                  inventoryData: [warehouseData],
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch specific warehouse:', error);
+            addMessage({
+              type: 'jarvis',
+              content: `I encountered an issue accessing ${warehouseName} data. Let me try again.`,
+            });
+          }
+        };
+        
+        fetchSpecificWarehouse();
       } else if (lowerMessage.includes('low stock') || lowerMessage.includes('reorder')) {
         const allLowStock = inventoryData?.flatMap(w => 
           w.lowStockItems.map(item => ({ ...item, warehouse: w.warehouse.name }))

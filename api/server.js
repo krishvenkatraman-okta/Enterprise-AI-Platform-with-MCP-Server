@@ -453,7 +453,15 @@ app.post('/mcp/inventory/query', (req, res) => {
     });
   }
   
-  const warehouses = Array.from(storage.warehouses.values());
+  const { type, warehouseState } = req.body;
+  let warehouses = Array.from(storage.warehouses.values());
+  
+  // Filter warehouses based on request type
+  if (type === 'warehouse_specific' && warehouseState) {
+    warehouses = warehouses.filter(w => w.state === warehouseState);
+    console.log(`Filtering for warehouse state: ${warehouseState}`);
+  }
+  
   const inventoryData = warehouses.map(warehouse => {
     const items = Array.from(storage.inventoryItems.values())
       .filter(item => item.warehouseId === warehouse.id);
@@ -483,7 +491,7 @@ app.post('/mcp/inventory/query', (req, res) => {
     };
   });
 
-  console.log(`Returning inventory data for ${warehouses.length} warehouses`);
+  console.log(`Returning inventory data for ${warehouses.length} warehouses (type: ${type})`);
   
   // Return data in the format expected by the frontend
   res.json({

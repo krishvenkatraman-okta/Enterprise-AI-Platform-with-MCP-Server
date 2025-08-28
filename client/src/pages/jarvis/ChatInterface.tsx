@@ -181,13 +181,12 @@ export default function ChatInterface() {
       const pendingWarehouseName = sessionStorage.getItem('pending_warehouse_name');
       
       console.log('🔍 Checking for pending requests:', { pendingState, pendingWarehouseName });
-      console.log('🔍 All sessionStorage keys:', Object.keys(sessionStorage));
-      console.log('🔍 All sessionStorage:', JSON.stringify(sessionStorage));
       
       if (pendingState && pendingWarehouseName) {
         // Clear the pending request
         sessionStorage.removeItem('pending_warehouse_request');
         sessionStorage.removeItem('pending_warehouse_name');
+        sessionStorage.removeItem('pending_warehouse_timestamp');
         
         // Trigger the specific warehouse request
         setTimeout(async () => {
@@ -294,12 +293,22 @@ export default function ChatInterface() {
     // Clear any previous flags on fresh load
     localStorage.removeItem('has_displayed_inventory');
     
-    // Clear any stale pending requests from previous sessions
+    // Clear any stale pending requests from previous sessions (older than 5 minutes)
     const existingPending = sessionStorage.getItem('pending_warehouse_request');
-    if (existingPending) {
-      console.log('🧹 Clearing stale pending request:', existingPending);
-      sessionStorage.removeItem('pending_warehouse_request');
-      sessionStorage.removeItem('pending_warehouse_name');
+    const pendingTimestamp = sessionStorage.getItem('pending_warehouse_timestamp');
+    
+    if (existingPending && pendingTimestamp) {
+      const age = Date.now() - parseInt(pendingTimestamp);
+      const maxAge = 5 * 60 * 1000; // 5 minutes
+      
+      if (age > maxAge) {
+        console.log('🧹 Clearing stale pending request:', existingPending, 'Age:', age);
+        sessionStorage.removeItem('pending_warehouse_request');
+        sessionStorage.removeItem('pending_warehouse_name');
+        sessionStorage.removeItem('pending_warehouse_timestamp');
+      } else {
+        console.log('🔄 Keeping recent pending request:', existingPending, 'Age:', age);
+      }
     }
     
     // Note: Token exchange will happen only when inventory data is requested
@@ -395,15 +404,9 @@ export default function ChatInterface() {
           });
           // Store the requested state for specific display after token exchange
           console.log('💾 Storing pending request:', { state, warehouseName });
-          console.log('💾 SessionStorage before storing:', JSON.stringify(sessionStorage));
           sessionStorage.setItem('pending_warehouse_request', state);
           sessionStorage.setItem('pending_warehouse_name', warehouseName);
-          
-          // Verify storage
-          const stored1 = sessionStorage.getItem('pending_warehouse_request');
-          const stored2 = sessionStorage.getItem('pending_warehouse_name');
-          console.log('✅ Verified stored values:', { stored1, stored2 });
-          console.log('✅ SessionStorage after storing:', JSON.stringify(sessionStorage));
+          sessionStorage.setItem('pending_warehouse_timestamp', Date.now().toString());
           
           jagTokenMutation.mutate();
           return;

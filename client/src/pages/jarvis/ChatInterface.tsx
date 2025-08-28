@@ -51,34 +51,62 @@ export default function ChatInterface() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: inventoryData } = useQuery<InventoryData[]>({
+  const { data: inventoryData, error: inventoryError, isLoading: inventoryLoading } = useQuery<InventoryData[]>({
     queryKey: ["/mcp/inventory/query"],
     enabled: hasAccessToken,
     queryFn: async () => {
+      console.log('=== Frontend: Fetching inventory data ===');
       const applicationToken = localStorage.getItem('application_token');
-      const response = await fetch('/mcp/inventory/query', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${applicationToken}`
-        },
-        body: JSON.stringify({
-          type: 'all_inventory'
-        })
-      });
+      console.log('Application token available:', !!applicationToken);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch inventory via MCP');
+      try {
+        const response = await fetch('/mcp/inventory/query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${applicationToken}`
+          },
+          body: JSON.stringify({
+            type: 'all_inventory'
+          })
+        });
+        
+        console.log('Inventory query response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Inventory query failed:', errorText);
+          throw new Error(`Failed to fetch inventory via MCP: ${response.status} - ${errorText}`);
+        }
+        
+        const mcpResponse = await response.json();
+        console.log('Inventory data received:', mcpResponse);
+        return mcpResponse.data; // Extract data from MCP response wrapper
+      } catch (error) {
+        console.error('Frontend inventory query error:', error);
+        throw error;
       }
-      
-      const mcpResponse = await response.json();
-      return mcpResponse.data; // Extract data from MCP response wrapper
-    }
+    },
+    retry: false,
+    refetchOnWindowFocus: false
   });
+
+  // Handle inventory query errors
+  useEffect(() => {
+    if (inventoryError) {
+      console.error('Inventory query error detected:', inventoryError);
+      addMessage({
+        type: 'system',
+        content: `Error fetching inventory data: ${inventoryError.message}. Please check the authentication flow.`,
+      });
+    }
+  }, [inventoryError]);
 
   // Auto-display warehouse data after inventory is fetched
   useEffect(() => {
-    if (inventoryData) {
+    console.log('Inventory data changed:', { inventoryData, hasAccessToken, inventoryLoading });
+    
+    if (inventoryData && Array.isArray(inventoryData) && inventoryData.length > 0) {
       const pendingRequest = localStorage.getItem('pending_warehouse_request');
       if (pendingRequest) {
         localStorage.removeItem('pending_warehouse_request');
@@ -108,7 +136,7 @@ export default function ChatInterface() {
         }
       }
     }
-  }, [inventoryData, hasAccessToken]);
+  }, [inventoryData, hasAccessToken, inventoryLoading]);
 
   // Step 1: Get JAG token from Okta
   const jagTokenMutation = useMutation({

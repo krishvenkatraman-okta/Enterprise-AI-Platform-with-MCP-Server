@@ -93,9 +93,22 @@ export default function ChatInterface() {
             });
           }, 500);
         }
+      } else {
+        // Auto-display inventory data when first fetched after authentication
+        const hasDisplayedInventory = localStorage.getItem('has_displayed_inventory');
+        if (!hasDisplayedInventory && hasAccessToken) {
+          localStorage.setItem('has_displayed_inventory', 'true');
+          setTimeout(() => {
+            addMessage({
+              type: 'jarvis',
+              content: `I've accessed the Atlas Beverages inventory system through cross-app authentication. Here's the current status across all warehouses:`,
+              inventoryData,
+            });
+          }, 1000);
+        }
       }
     }
-  }, [inventoryData]);
+  }, [inventoryData, hasAccessToken]);
 
   // Step 1: Get JAG token from Okta
   const jagTokenMutation = useMutation({
@@ -164,6 +177,11 @@ export default function ChatInterface() {
         type: 'system',
         content: `MCP authorization server validated JAG token and issued access token. Cross-app authentication complete. Now fetching inventory data...`,
       });
+      
+      // Trigger inventory data fetch after authentication
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ["/mcp/inventory/query"] });
+      }, 500);
     },
     onError: (error) => {
       console.error('MCP Token Exchange Error:', error);

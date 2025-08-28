@@ -324,10 +324,19 @@ export default function ChatInterface() {
           return;
         }
 
-        // Fetch specific warehouse data
-        const fetchSpecificWarehouse = async () => {
+        // Add loading message
+        addMessage({
+          type: 'jarvis',
+          content: `Let me fetch the current inventory data for ${warehouseName}...`,
+        });
+        
+        // Fetch specific warehouse data immediately
+        setTimeout(async () => {
           try {
             const applicationToken = localStorage.getItem('application_token');
+            console.log('Making warehouse request for state:', state);
+            console.log('Application token available:', !!applicationToken);
+            
             const response = await fetch('/mcp/inventory/query', {
               method: 'POST',
               headers: {
@@ -342,13 +351,13 @@ export default function ChatInterface() {
               })
             });
             
-            console.log('Specific warehouse request for state:', state);
+            console.log('Warehouse query response status:', response.status);
             
             if (response.ok) {
               const mcpResponse = await response.json();
-              console.log('Specific warehouse response:', mcpResponse);
+              console.log('Warehouse query response:', mcpResponse);
               
-              // Handle the actual MCP server response format
+              // Handle the MCP server response format
               if (mcpResponse.success && mcpResponse.data) {
                 const warehouseData = {
                   warehouse: mcpResponse.data.warehouse,
@@ -364,6 +373,16 @@ export default function ChatInterface() {
                   content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
                   inventoryData: [warehouseData],
                 });
+              } else if (mcpResponse.data && Array.isArray(mcpResponse.data)) {
+                // Handle old format (fallback)
+                const warehouseData = mcpResponse.data[0];
+                if (warehouseData) {
+                  addMessage({
+                    type: 'jarvis',
+                    content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
+                    inventoryData: [warehouseData],
+                  });
+                }
               } else {
                 addMessage({
                   type: 'jarvis',
@@ -375,19 +394,17 @@ export default function ChatInterface() {
               console.error('Warehouse query failed:', errorText);
               addMessage({
                 type: 'jarvis',
-                content: `I encountered an issue accessing ${warehouseName} data: ${errorText}`,
+                content: `I encountered an issue accessing ${warehouseName} data: ${response.status} - ${errorText}`,
               });
             }
           } catch (error) {
             console.error('Failed to fetch specific warehouse:', error);
             addMessage({
               type: 'jarvis',
-              content: `I encountered an issue accessing ${warehouseName} data. Let me try again.`,
+              content: `Network error accessing ${warehouseName} data. Please try again.`,
             });
           }
-        };
-        
-        fetchSpecificWarehouse();
+        }, 800);
       } else if (lowerMessage.includes('low stock') || lowerMessage.includes('reorder')) {
         addMessage({
           type: 'jarvis',

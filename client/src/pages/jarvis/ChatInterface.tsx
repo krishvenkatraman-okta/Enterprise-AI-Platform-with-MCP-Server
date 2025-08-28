@@ -181,6 +181,8 @@ export default function ChatInterface() {
       const pendingWarehouseName = sessionStorage.getItem('pending_warehouse_name');
       
       console.log('🔍 Checking for pending requests:', { pendingState, pendingWarehouseName });
+      console.log('🔍 All sessionStorage keys:', Object.keys(sessionStorage));
+      console.log('🔍 All sessionStorage:', JSON.stringify(sessionStorage));
       
       if (pendingState && pendingWarehouseName) {
         // Clear the pending request
@@ -393,6 +395,7 @@ export default function ChatInterface() {
           });
           // Store the requested state for specific display after token exchange
           console.log('💾 Storing pending request:', { state, warehouseName });
+          console.log('💾 SessionStorage before storing:', JSON.stringify(sessionStorage));
           sessionStorage.setItem('pending_warehouse_request', state);
           sessionStorage.setItem('pending_warehouse_name', warehouseName);
           
@@ -400,6 +403,7 @@ export default function ChatInterface() {
           const stored1 = sessionStorage.getItem('pending_warehouse_request');
           const stored2 = sessionStorage.getItem('pending_warehouse_name');
           console.log('✅ Verified stored values:', { stored1, stored2 });
+          console.log('✅ SessionStorage after storing:', JSON.stringify(sessionStorage));
           
           jagTokenMutation.mutate();
           return;

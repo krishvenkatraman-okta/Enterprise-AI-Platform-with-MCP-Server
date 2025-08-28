@@ -118,10 +118,13 @@ export default function AuthGuard({
           // Force state update
           setAuthState(authService.getState());
           
-          // Redirect to the appropriate application after successful authentication
+          // Navigate to the appropriate application after successful authentication  
           const redirectPath = application === 'inventory' ? '/inventory' : '/jarvis';
-          console.log('Authentication complete, redirecting to:', redirectPath);
-          window.location.href = redirectPath;
+          console.log('Authentication complete, navigating to:', redirectPath);
+          // Use history navigation instead of full page reload to preserve sessionStorage
+          window.history.pushState({}, '', redirectPath);
+          // Trigger a popstate event to notify React Router
+          window.dispatchEvent(new PopStateEvent('popstate'));
         } catch (error) {
           console.error('Authentication error:', error);
         } finally {

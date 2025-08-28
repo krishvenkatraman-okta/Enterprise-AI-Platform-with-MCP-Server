@@ -354,6 +354,7 @@ export default function ChatInterface() {
 
   const processUserMessage = (message: string) => {
     const lowerMessage = message.toLowerCase();
+    console.log('🔍 Processing message:', lowerMessage);
 
     // Simulate processing delay
     setTimeout(() => {
@@ -382,6 +383,7 @@ export default function ChatInterface() {
         }
       } else if (lowerMessage.includes('texas') || lowerMessage.includes('california') || lowerMessage.includes('nevada') ||
                  lowerMessage.includes('west coast') || lowerMessage.includes('westcoast') || lowerMessage.includes('central') || lowerMessage.includes('desert')) {
+        console.log('🏭 Warehouse condition hit for message:', lowerMessage);
         // Map user input to warehouse states and names
         let state = '';
         let warehouseName = '';
@@ -392,6 +394,7 @@ export default function ChatInterface() {
         } else if (lowerMessage.includes('california') || lowerMessage.includes('west coast') || lowerMessage.includes('westcoast')) {
           state = 'California'; 
           warehouseName = 'West Coast Distribution';
+          console.log('🌎 Matched California/West Coast:', { state, warehouseName });
         } else if (lowerMessage.includes('nevada') || lowerMessage.includes('desert')) {
           state = 'Nevada';
           warehouseName = 'Desert Springs Depot';
@@ -529,6 +532,14 @@ export default function ChatInterface() {
           content: 'I can help you with:\n\n• View inventory levels across all warehouses\n• Check specific warehouse inventory:\n  - West Coast Distribution (California)\n  - Central Distribution Hub (Texas)\n  - Desert Springs Depot (Nevada)\n• Identify low stock items and reorder recommendations\n• Generate inventory reports and analytics\n• Monitor stock movements and trends\n\nWhat would you like to know about the Atlas Beverages inventory?',
         });
       } else {
+        console.log('❌ No conditions matched for message:', lowerMessage);
+        console.log('❌ Checked conditions:', {
+          hasInventoryOrStock: lowerMessage.includes('inventory') || lowerMessage.includes('stock'),
+          hasWarehouseTerms: lowerMessage.includes('texas') || lowerMessage.includes('california') || lowerMessage.includes('nevada') || lowerMessage.includes('west coast') || lowerMessage.includes('westcoast') || lowerMessage.includes('central') || lowerMessage.includes('desert'),
+          hasLowStock: lowerMessage.includes('low stock') || lowerMessage.includes('reorder'),
+          hasHelp: lowerMessage.includes('help') || lowerMessage.includes('what can you do')
+        });
+        
         addMessage({
           type: 'jarvis',
           content: "I'm here to help with Atlas Beverages inventory management. You can ask me about stock levels, warehouse status, low stock alerts, or reorder recommendations. What would you like to know?",

@@ -200,11 +200,91 @@ export default function ChatInterface() {
         content: `MCP authorization server validated JAG token and issued access token. Cross-app authentication complete. Now fetching inventory data...`,
       });
       
-      // Trigger inventory data fetch after authentication
-      setTimeout(() => {
-        console.log('=== Triggering inventory query after authentication ===');
-        queryClient.refetchQueries({ queryKey: ["/mcp/inventory/query"] });
-      }, 1000);
+      // Check if there was a pending warehouse request
+      const pendingState = localStorage.getItem('pending_warehouse_request');
+      const pendingWarehouseName = localStorage.getItem('pending_warehouse_name');
+      
+      if (pendingState && pendingWarehouseName) {
+        // Clear the pending request
+        localStorage.removeItem('pending_warehouse_request');
+        localStorage.removeItem('pending_warehouse_name');
+        
+        // Trigger the specific warehouse request
+        setTimeout(async () => {
+          console.log('=== Processing pending warehouse request ===');
+          console.log('Pending state:', pendingState, 'Pending warehouse:', pendingWarehouseName);
+          
+          try {
+            const applicationToken = localStorage.getItem('application_token');
+            console.log('Making pending warehouse request for state:', pendingState);
+            
+            const response = await fetch('/mcp/inventory/query', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${applicationToken}`
+              },
+              body: JSON.stringify({
+                type: 'warehouse',
+                filters: {
+                  state: pendingState
+                }
+              })
+            });
+            
+            console.log('Pending warehouse query response status:', response.status);
+            
+            if (response.ok) {
+              const mcpResponse = await response.json();
+              console.log('Pending warehouse query response:', mcpResponse);
+              
+              if (mcpResponse.success && mcpResponse.data) {
+                const warehouseData = {
+                  warehouse: mcpResponse.data.warehouse,
+                  totalItems: mcpResponse.data.totalItems,
+                  totalValue: mcpResponse.data.items.reduce((sum: number, item: any) => sum + (item.quantity * item.price), 0),
+                  items: mcpResponse.data.items,
+                  lowStockItems: mcpResponse.data.lowStockItems,
+                  recentActivity: []
+                };
+                
+                console.log('✅ Successfully processed pending warehouse data:', warehouseData.warehouse.name);
+                
+                addMessage({
+                  type: 'jarvis',
+                  content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
+                  inventoryData: [warehouseData],
+                });
+              } else {
+                console.error('❌ Invalid pending response format:', mcpResponse);
+                addMessage({
+                  type: 'jarvis',
+                  content: `Unable to retrieve ${pendingWarehouseName} data after authentication. Please try your request again.`,
+                });
+              }
+            } else {
+              const errorText = await response.text();
+              console.error('Pending warehouse query failed:', errorText);
+              addMessage({
+                type: 'jarvis',
+                content: `Error retrieving ${pendingWarehouseName} data: ${response.status}. Please try again.`,
+              });
+            }
+          } catch (error) {
+            console.error('❌ Failed pending warehouse request:', error);
+            addMessage({
+              type: 'jarvis',
+              content: `Network error retrieving ${pendingWarehouseName} data. Please try your request again.`,
+            });
+          }
+        }, 1000);
+      } else {
+        // No pending request - just trigger general inventory if needed
+        setTimeout(() => {
+          console.log('=== No pending request, triggering general inventory query ===');
+          queryClient.refetchQueries({ queryKey: ["/mcp/inventory/query"] });
+        }, 1000);
+      }
     },
     onError: (error) => {
       console.error('MCP Token Exchange Error:', error);

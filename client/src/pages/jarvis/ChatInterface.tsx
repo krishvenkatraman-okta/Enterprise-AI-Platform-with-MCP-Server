@@ -201,15 +201,15 @@ export default function ChatInterface() {
       });
       
       // Check if there was a pending warehouse request
-      const pendingState = localStorage.getItem('pending_warehouse_request');
-      const pendingWarehouseName = localStorage.getItem('pending_warehouse_name');
+      const pendingState = sessionStorage.getItem('pending_warehouse_request');
+      const pendingWarehouseName = sessionStorage.getItem('pending_warehouse_name');
       
       console.log('🔍 Checking for pending requests:', { pendingState, pendingWarehouseName });
       
       if (pendingState && pendingWarehouseName) {
         // Clear the pending request
-        localStorage.removeItem('pending_warehouse_request');
-        localStorage.removeItem('pending_warehouse_name');
+        sessionStorage.removeItem('pending_warehouse_request');
+        sessionStorage.removeItem('pending_warehouse_name');
         
         // Trigger the specific warehouse request
         setTimeout(async () => {
@@ -317,11 +317,11 @@ export default function ChatInterface() {
     localStorage.removeItem('has_displayed_inventory');
     
     // Clear any stale pending requests from previous sessions
-    const existingPending = localStorage.getItem('pending_warehouse_request');
+    const existingPending = sessionStorage.getItem('pending_warehouse_request');
     if (existingPending) {
       console.log('🧹 Clearing stale pending request:', existingPending);
-      localStorage.removeItem('pending_warehouse_request');
-      localStorage.removeItem('pending_warehouse_name');
+      sessionStorage.removeItem('pending_warehouse_request');
+      sessionStorage.removeItem('pending_warehouse_name');
     }
     
     // Note: Token exchange will happen only when inventory data is requested
@@ -417,12 +417,12 @@ export default function ChatInterface() {
           });
           // Store the requested state for specific display after token exchange
           console.log('💾 Storing pending request:', { state, warehouseName });
-          localStorage.setItem('pending_warehouse_request', state);
-          localStorage.setItem('pending_warehouse_name', warehouseName);
+          sessionStorage.setItem('pending_warehouse_request', state);
+          sessionStorage.setItem('pending_warehouse_name', warehouseName);
           
           // Verify storage
-          const stored1 = localStorage.getItem('pending_warehouse_request');
-          const stored2 = localStorage.getItem('pending_warehouse_name');
+          const stored1 = sessionStorage.getItem('pending_warehouse_request');
+          const stored2 = sessionStorage.getItem('pending_warehouse_name');
           console.log('✅ Verified stored values:', { stored1, stored2 });
           
           jagTokenMutation.mutate();

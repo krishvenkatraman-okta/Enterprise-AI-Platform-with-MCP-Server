@@ -439,7 +439,20 @@ app.post('/oauth2/token', (req, res) => {
   }
 });
 
-app.get('/mcp/inventory/query', (req, res) => {
+app.post('/mcp/inventory/query', (req, res) => {
+  console.log('=== MCP Inventory Query ===');
+  console.log('Request headers:', req.headers);
+  console.log('Request body:', req.body);
+  
+  // Check for authorization header (application token)
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      error: 'unauthorized',
+      error_description: 'Bearer token required for MCP access'
+    });
+  }
+  
   const warehouses = Array.from(storage.warehouses.values());
   const inventoryData = warehouses.map(warehouse => {
     const items = Array.from(storage.inventoryItems.values())
@@ -461,7 +474,12 @@ app.get('/mcp/inventory/query', (req, res) => {
     };
   });
 
-  res.json(inventoryData);
+  console.log(`Returning inventory data for ${warehouses.length} warehouses`);
+  
+  // Return data in the format expected by the frontend
+  res.json({
+    data: inventoryData
+  });
 });
 
 // External MCP endpoint

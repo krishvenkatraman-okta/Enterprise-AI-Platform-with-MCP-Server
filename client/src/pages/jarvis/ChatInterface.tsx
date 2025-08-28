@@ -105,30 +105,7 @@ export default function ChatInterface() {
   // Auto-display warehouse data after inventory is fetched
   useEffect(() => {
     console.log('Inventory data changed:', { inventoryData, hasAccessToken, inventoryLoading });
-    
-    // Handle pending warehouse requests after authentication
-    if (hasAccessToken) {
-      const pendingRequest = sessionStorage.getItem('pending_warehouse_request');
-      const pendingWarehouseName = sessionStorage.getItem('pending_warehouse_name');
-      
-      if (pendingRequest && pendingWarehouseName) {
-        console.log('Processing pending warehouse request:', pendingRequest);
-        sessionStorage.removeItem('pending_warehouse_request');
-        sessionStorage.removeItem('pending_warehouse_name');
-        
-        // Trigger the specific warehouse request by simulating user input
-        setTimeout(() => {
-          const messageMap = {
-            'California': 'Show West Coast warehouse inventory',
-            'Texas': 'Check Central Hub status',
-            'Nevada': 'Show Desert Springs inventory'
-          };
-          
-          const message = messageMap[pendingRequest as keyof typeof messageMap] || `Show ${pendingWarehouseName} warehouse inventory`;
-          processUserMessage(message);
-        }, 1000);
-      }
-    }
+    // Note: Pending warehouse requests are handled in appTokenMutation.onSuccess
   }, [inventoryData, hasAccessToken, inventoryLoading]);
 
   // Step 1: Get JAG token from Okta

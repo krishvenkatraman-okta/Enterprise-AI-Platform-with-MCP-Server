@@ -368,6 +368,8 @@ export default function ChatInterface() {
                   recentActivity: []
                 };
                 
+                console.log('✅ Successfully processed warehouse data:', warehouseData.warehouse.name);
+                
                 addMessage({
                   type: 'jarvis',
                   content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
@@ -377,16 +379,25 @@ export default function ChatInterface() {
                 // Handle old format (fallback)
                 const warehouseData = mcpResponse.data[0];
                 if (warehouseData) {
+                  console.log('✅ Successfully processed warehouse data (old format):', warehouseData.warehouse.name);
+                  
                   addMessage({
                     type: 'jarvis',
                     content: `Here's the current inventory status for ${warehouseData.warehouse.name} (${warehouseData.warehouse.location}):`,
                     inventoryData: [warehouseData],
                   });
+                } else {
+                  console.error('❌ Empty warehouse data array');
+                  addMessage({
+                    type: 'jarvis',
+                    content: `No inventory data found for ${warehouseName}. The warehouse might not be in our system.`,
+                  });
                 }
               } else {
+                console.error('❌ Invalid response format:', mcpResponse);
                 addMessage({
                   type: 'jarvis',
-                  content: `No inventory data found for ${warehouseName}. The warehouse might not be in our system.`,
+                  content: `Invalid response format for ${warehouseName}. Please try again.`,
                 });
               }
             } else {
@@ -398,10 +409,16 @@ export default function ChatInterface() {
               });
             }
           } catch (error) {
-            console.error('Failed to fetch specific warehouse:', error);
+            console.error('❌ Failed to fetch specific warehouse:', error);
+            console.error('Error details:', {
+              message: error.message,
+              stack: error.stack,
+              state: state,
+              warehouseName: warehouseName
+            });
             addMessage({
               type: 'jarvis',
-              content: `Network error accessing ${warehouseName} data. Please try again.`,
+              content: `Network error accessing ${warehouseName} data: ${error.message}. Please check your connection and try again.`,
             });
           }
         }, 800);

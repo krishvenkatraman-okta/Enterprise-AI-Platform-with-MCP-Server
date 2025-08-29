@@ -540,25 +540,36 @@ const handleMcpInventoryQuery = (req, res) => {
       console.log('📦 Filtering for Nevada warehouses');
     }
     
-    // Build response with items
+    // Build response with items - match frontend InventoryData interface
     const result = warehouses.map(warehouse => {
       const items = Array.from(storage.inventoryItems.values())
         .filter(item => item.warehouseId === warehouse.id);
       
+      const lowStockItems = items.filter(item => item.quantity <= item.minStock);
+      
       return {
-        id: warehouse.id,
-        name: warehouse.name,
-        location: warehouse.location,
-        state: warehouse.state,
+        warehouse: {
+          id: warehouse.id,
+          name: warehouse.name,
+          location: warehouse.location,
+          state: warehouse.state
+        },
         items: items.map(item => ({
           id: item.id,
           name: item.name,
+          sku: item.id,  // Use id as sku for demo
           category: item.category,
           quantity: item.quantity,
-          minStock: item.minStock,
-          price: item.price,
-          location: `${warehouse.location} - Section ${Math.floor(Math.random() * 10) + 1}`,
-          lastRestocked: new Date(Date.now() - Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          minStockLevel: item.minStock,
+          price: item.price
+        })),
+        totalItems: items.length,
+        lowStockItems: lowStockItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          sku: item.id,
+          quantity: item.quantity,
+          minStockLevel: item.minStock
         }))
       };
     });

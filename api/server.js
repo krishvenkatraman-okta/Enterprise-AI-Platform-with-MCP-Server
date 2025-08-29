@@ -421,127 +421,170 @@ app.get('/api/inventory/:warehouseId', (req, res) => {
   res.json(items);
 });
 
-// MCP endpoints
-app.post('/oauth2/token', (req, res) => {
-  const { grant_type, assertion } = req.body;
-  
-  if (grant_type === 'urn:ietf:params:oauth:grant-type:jwt-bearer' && assertion) {
-    res.json({
+// MCP endpoints (both /oauth2 and /api/oauth2 for compatibility)
+const handleOAuth2Token = (req, res) => {
+  try {
+    console.log('🔑 OAuth2 Token Request');
+    
+    // Check Basic Auth
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Basic authentication required'
+      });
+    }
+    
+    // Decode Basic Auth
+    const base64 = authHeader.replace('Basic ', '');
+    const credentials = Buffer.from(base64, 'base64').toString('ascii');
+    const [clientId, clientSecret] = credentials.split(':');
+    
+    // Validate client credentials
+    const validClientId = process.env.MCP_SERVER_CLIENT_ID || 'mcp_inventory_server_001';
+    const validClientSecret = process.env.MCP_SERVER_CLIENT_SECRET || 'mcp_server_secret_2024_inventory_access';
+    
+    if (clientId !== validClientId || clientSecret !== validClientSecret) {
+      return res.status(401).json({
+        error: 'invalid_client',
+        error_description: 'Invalid client credentials'
+      });
+    }
+    
+    const { grant_type, assertion } = req.body;
+    
+    console.log('📋 Grant type:', grant_type);
+    console.log('🎫 JAG token received');
+    
+    // Validate grant type
+    if (grant_type !== 'urn:ietf:params:oauth:grant-type:jwt-bearer') {
+      return res.status(400).json({
+        error: 'unsupported_grant_type',
+        error_description: 'Only jwt-bearer grant type supported'
+      });
+    }
+    
+    if (!assertion) {
+      return res.status(400).json({
+        error: 'invalid_request', 
+        error_description: 'assertion parameter required'
+      });
+    }
+    
+    // Basic JWT validation
+    const parts = assertion.split('.');
+    if (parts.length !== 3) {
+      return res.status(401).json({
+        error: 'invalid_grant',
+        error_description: 'Invalid JWT format'
+      });
+    }
+    
+    // Generate access token
+    const accessToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    
+    console.log('✅ Generated MCP access token');
+    
+    return res.status(200).json({
       token_type: 'Bearer',
-      access_token: 'mcp_access_token_' + Date.now(),
-      expires_in: 3600
+      access_token: accessToken,
+      expires_in: 86400,
+      scope: 'inventory:read'
     });
-  } else {
-    res.status(400).json({
-      error: 'invalid_grant',
-      error_description: 'Unsupported grant type'
+    
+  } catch (error) {
+    console.error('❌ OAuth Token Error:', error);
+    return res.status(500).json({
+      error: 'server_error',
+      error_description: 'Internal server error'
     });
   }
-});
+};
 
-app.post('/mcp/inventory/query', (req, res) => {
-  console.log('=== MCP Inventory Query ===');
-  console.log('Request headers:', req.headers);
-  console.log('Request body:', req.body);
-  
-  // Check for authorization header (application token)
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      error: 'unauthorized',
-      error_description: 'Bearer token required for MCP access'
-    });
-  }
-  
-  const { type, filters } = req.body;
-  let warehouses = Array.from(storage.warehouses.values());
-  
-  // Filter warehouses based on request type
-  if (type === 'warehouse' && filters?.state) {
-    warehouses = warehouses.filter(w => w.state === filters.state);
-    console.log(`Filtering for warehouse state: ${filters.state}`);
-  }
-  
-  const inventoryData = warehouses.map(warehouse => {
-    const items = Array.from(storage.inventoryItems.values())
-      .filter(item => item.warehouseId === warehouse.id);
-    
-    const lowStockItems = items.filter(item => item.quantity <= item.minStock);
-    
-    return {
-      warehouse,
-      totalItems: items.length,
-      totalValue: items.reduce((sum, item) => sum + (item.quantity * item.price), 0),
-      items: items.map(item => ({
-        id: item.id,
-        name: item.name,
-        sku: item.sku,
-        quantity: item.quantity,
-        minStockLevel: item.minStock,
-        category: item.category,
-        price: item.price
-      })),
-      lowStockItems: lowStockItems.map(item => ({
-        name: item.name,
-        currentStock: item.quantity,
-        minStock: item.minStock,
-        category: item.category
-      })),
-      recentActivity: []
-    };
-  });
+// Register both endpoints
+app.post('/oauth2/token', handleOAuth2Token);
+app.post('/api/oauth2/token', handleOAuth2Token);
 
-  console.log(`Returning inventory data for ${warehouses.length} warehouses (type: ${type})`);
-  
-  // For warehouse-specific queries, return single warehouse in MCP server format
-  if (type === 'warehouse' && warehouses.length === 1) {
-    const warehouse = warehouses[0];
-    const items = Array.from(storage.inventoryItems.values())
-      .filter(item => item.warehouseId === warehouse.id);
+const handleMcpInventoryQuery = (req, res) => {
+  try {
+    console.log('🔍 MCP Inventory Query Request');
+    console.log('📋 Request body:', req.body);
     
-    const lowStockItems = items.filter(item => item.quantity <= item.minStock);
+    // Check Bearer token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: 'unauthorized',
+        message: 'Bearer token required'
+      });
+    }
     
-    res.json({
-      success: true,
-      queryType: 'warehouse',
-      data: {
-        warehouse,
+    const token = authHeader.replace('Bearer ', '');
+    console.log('🔑 Token:', token.substring(0, 20) + '...');
+    
+    const query = req.body?.query || req.query?.query || '';
+    console.log('🔍 Query:', query);
+    
+    // Get all warehouses
+    let warehouses = Array.from(storage.warehouses.values());
+    
+    // Filter warehouses based on query
+    if (query.toLowerCase().includes('california') || query.toLowerCase().includes('west coast')) {
+      warehouses = warehouses.filter(w => w.state === 'California');
+      console.log('📦 Filtering for California warehouses');
+    } else if (query.toLowerCase().includes('texas') || query.toLowerCase().includes('central')) {
+      warehouses = warehouses.filter(w => w.state === 'Texas');
+      console.log('📦 Filtering for Texas warehouses');
+    } else if (query.toLowerCase().includes('nevada') || query.toLowerCase().includes('mountain')) {
+      warehouses = warehouses.filter(w => w.state === 'Nevada');
+      console.log('📦 Filtering for Nevada warehouses');
+    }
+    
+    // Build response with items
+    const result = warehouses.map(warehouse => {
+      const items = Array.from(storage.inventoryItems.values())
+        .filter(item => item.warehouseId === warehouse.id);
+      
+      return {
+        id: warehouse.id,
+        name: warehouse.name,
+        location: warehouse.location,
+        state: warehouse.state,
         items: items.map(item => ({
           id: item.id,
-          warehouseId: item.warehouseId,
           name: item.name,
-          sku: item.sku,
           category: item.category,
           quantity: item.quantity,
-          minStockLevel: item.minStock,
+          minStock: item.minStock,
           price: item.price,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt
-        })),
-        totalItems: items.length,
-        lowStockItems: lowStockItems.map(item => ({
-          id: item.id,
-          warehouseId: item.warehouseId,
-          name: item.name,
-          sku: item.sku,
-          category: item.category,
-          quantity: item.quantity,
-          minStockLevel: item.minStock,
-          price: item.price,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt
+          location: `${warehouse.location} - Section ${Math.floor(Math.random() * 10) + 1}`,
+          lastRestocked: new Date(Date.now() - Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         }))
-      },
-      timestamp: new Date().toISOString(),
-      source: 'mcp-inventory-server'
+      };
     });
-  } else {
-    // Return data in the old format for backward compatibility
-    res.json({
-      data: inventoryData
+    
+    console.log(`✅ Returning ${result.length} warehouses with inventory data`);
+    
+    return res.status(200).json({
+      success: true,
+      data: result,
+      query: query,
+      timestamp: new Date().toISOString(),
+      count: result.length
+    });
+    
+  } catch (error) {
+    console.error('❌ MCP Query Error:', error);
+    return res.status(500).json({
+      error: 'server_error',
+      message: error.message
     });
   }
-});
+};
+
+// Register both endpoints 
+app.post('/mcp/inventory/query', handleMcpInventoryQuery);
+app.post('/api/mcp/inventory/query', handleMcpInventoryQuery);
 
 // External MCP endpoint
 app.post('/mcp/external/token', (req, res) => {

@@ -17,13 +17,29 @@ npm run dev
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/enterprise-ai-platform)
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/yourusername/enterprise-ai-platform)
 
-**That's it!** The app runs on http://localhost:5000 with:
-- ✅ Pre-populated demo inventory across 3 warehouses
-- ✅ Okta authentication ready
-- ✅ MCP server with JWT-bearer token exchange
-- ✅ External LLM integration endpoints
+**Local Development:** `npm run dev` → http://localhost:5000  
+**Production Deploy:** Vercel/Netlify → https://your-app.vercel.app
+
+**Features included:**
+
+✅ **Dual interface system** - Atlas Beverages + J.A.R.V.I.S  
+✅ **Working OAuth2 authentication** - Complete login/logout flow  
+✅ **Cross-application token exchange** - JAG tokens for inventory access  
+✅ **External LLM integration** - Production-ready MCP endpoints  
+✅ **Vercel deployment ready** - Zero-config serverless functions  
+✅ **Pre-populated demo data** - 3 warehouses, 13 inventory items  
+✅ **Real-time inventory queries** - State-based warehouse filtering
 
 ## 🏗️ **Architecture Overview**
+
+### **Latest Improvements (August 2025)** 🆕
+- ✅ **Fixed Vercel deployment** - Consolidated all endpoints into single `api/server.js`
+- ✅ **Resolved JSON parsing errors** - Proper serverless function routing  
+- ✅ **Fixed data structure mismatches** - Frontend and backend now fully compatible
+- ✅ **Working logout functionality** - Complete session management
+- ✅ **Enhanced external LLM integration** - Production-ready OAuth2 endpoints
+- ✅ **Warehouse-specific queries** - Precise state-based filtering
+- ✅ **Cross-interface authentication** - Seamless JAG token exchange
 
 ### **Dual Interface System**
 - **Atlas Beverages**: Inventory management interface
@@ -72,19 +88,32 @@ The platform starts with realistic inventory across 3 warehouses:
 3. JAG token exchanged for MCP access token
 4. Access inventory via MCP server
 
-### **External LLM Integration**
+### **External LLM Integration** 🤖
+
+**Production URLs** (Vercel deployment):
 ```bash
 # Step 1: Exchange JAG for MCP access token
-curl -X POST http://localhost:5000/mcp/external/token \
+curl -X POST https://your-app.vercel.app/api/oauth2/token \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=<JAG_TOKEN>"
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<JAG_TOKEN>"
 
-# Step 2: Query inventory with access token
-curl -X POST http://localhost:5000/mcp/inventory/query \
+# Step 2: Query inventory with access token  
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"type": "warehouse", "filters": {"state": "California"}}'
+```
+
+**Local development:**
+```bash
+# Same endpoints work locally on http://localhost:5000
+curl -X POST http://localhost:5000/api/oauth2/token \
+  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<JAG_TOKEN>"
 ```
 
 ## 🛠️ **Tech Stack**
@@ -108,25 +137,23 @@ curl -X POST http://localhost:5000/mcp/inventory/query \
 
 ## 🌐 **API Endpoints**
 
-### **Authentication**
-- `POST /api/auth/callback` - OAuth callback handler
-- `POST /api/auth/token-exchange` - JAG to access token exchange
-- `GET /api/auth/sessions` - User session management
-- `POST /api/auth/logout` - Session termination
+### **Authentication & Sessions**
+- `GET /api/config` - Get Okta configuration (client IDs, domains)
+- `POST /api/auth/callback` - OAuth callback handler with PKCE
+- `POST /api/auth/login` - Process ID token and create session
+- `POST /api/auth/token-exchange` - JAG to access token exchange (J.A.R.V.I.S)
+- `POST /api/auth/logout` - Session termination and cleanup
 
-### **Inventory Management**
+### **Inventory Management** 
 - `GET /api/warehouses` - List all warehouses
 - `GET /api/inventory/:warehouseId` - Get warehouse inventory
-- `POST /api/inventory` - Create inventory item
-- `PUT /api/inventory/:id` - Update inventory item
-- `DELETE /api/inventory/:id` - Delete inventory item
 
-### **MCP Server**
-- `POST /oauth2/token` - OAuth token endpoint (frontend)
-- `POST /mcp/external/token` - OAuth token endpoint (external LLMs)
-- `POST /mcp/inventory/query` - Query inventory with access token
-- `POST /mcp/external/inventory` - Direct inventory access (Basic auth)
-- `GET /mcp/health` - Server status and configuration
+### **MCP Server (External LLM Integration)**
+- `POST /api/oauth2/token` - OAuth2 JWT-bearer token exchange
+- `POST /api/mcp/inventory/query` - Query inventory with access token  
+- `GET /api/health` - Server status and configuration
+
+**Note**: All endpoints are consolidated into `/api/server.js` for Vercel serverless compatibility.
 
 ## 🔧 **Environment Setup**
 
@@ -152,13 +179,27 @@ MCP_SERVER_CLIENT_SECRET=mcp_server_secret_2024_inventory_access
 
 ## 📋 **Deployment**
 
-### **Vercel (Recommended)**
+### **Vercel (Recommended)** ⚡
+**Architecture**: All API routes consolidated into single `api/server.js` file for serverless compatibility.
+
 ```bash
-# Deploy directly to Vercel
+# Option 1: Deploy directly to Vercel
 npm install -g vercel
 vercel
 
-# Or connect your GitHub repo to Vercel dashboard
+# Option 2: Connect your GitHub repo to Vercel dashboard
+# - Import your GitHub repository
+# - Vercel automatically detects the configuration
+# - Set environment variables in Vercel dashboard (optional)
+```
+
+**File Structure** (Vercel-optimized):
+```
+api/
+├── server.js          # ← All endpoints (OAuth2 + MCP + Auth)
+└── (no other files)   # ← Removed individual function files
+
+vercel.json            # ← Routes all /api/* to server.js
 ```
 
 ### **Docker**
@@ -184,21 +225,42 @@ npm start
 curl http://localhost:5000/mcp/health | jq .
 ```
 
-### **Test Direct Inventory Access**
+### **Test OAuth2 Token Exchange** 🔐
 ```bash
-curl -X POST http://localhost:5000/mcp/external/inventory \
-  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -H "Content-Type: application/json" \
-  -d '{"query": {"type": "warehouse", "filters": {"state": "California"}}}'
-```
-
-### **Test Token Exchange Flow**
-```bash
-# Use demo JAG token
-curl -X POST http://localhost:5000/mcp/external/token \
+# Step 1: Get MCP access token using JAG
+curl -X POST http://localhost:5000/api/oauth2/token \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2ZjeGRlbW8ub2t0YS5jb20iLCJzdWIiOiJ0ZXN0In0.test"
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<REAL_JAG_TOKEN_FROM_JARVIS>"
+
+# Expected response:
+# {
+#   "token_type": "Bearer",
+#   "access_token": "abc123def456...",
+#   "expires_in": 86400,
+#   "scope": "inventory:read"
+# }
+```
+
+### **Test Inventory Query** 📊
+```bash
+# Step 2: Query California warehouse
+curl -X POST http://localhost:5000/api/mcp/inventory/query \
+  -H "Authorization: Bearer <ACCESS_TOKEN_FROM_STEP_1>" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "warehouse", "filters": {"state": "California"}}'
+
+# Expected response:
+# {
+#   "success": true,
+#   "data": {
+#     "warehouse": {"id": "warehouse-ca-001", "name": "West Coast Distribution"},
+#     "items": [...],
+#     "totalItems": 5,
+#     "lowStockItems": [...]
+#   }
+# }
 ```
 
 ## 📚 **Documentation**

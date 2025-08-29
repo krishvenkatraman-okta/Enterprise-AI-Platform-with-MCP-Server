@@ -229,6 +229,29 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Logout endpoint
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    console.log('=== Logout Request ===');
+    console.log('Session ID from request:', req.body.sessionId);
+    
+    const { sessionId } = req.body;
+    
+    if (sessionId && storage.authSessions.has(sessionId)) {
+      storage.authSessions.delete(sessionId);
+      console.log('✅ Session deleted:', sessionId);
+    }
+    
+    res.json({
+      success: true,
+      message: "Logged out successfully"
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: "Logout failed" });
+  }
+});
+
 // Token exchange endpoint for J.A.R.V.I.S to get JAG tokens
 app.post('/api/auth/token-exchange', async (req, res) => {
   console.log('=== Token Exchange Request ===');

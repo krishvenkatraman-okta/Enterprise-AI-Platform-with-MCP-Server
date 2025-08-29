@@ -586,14 +586,30 @@ const handleMcpInventoryQuery = (req, res) => {
     
     console.log(`✅ Returning ${result.length} warehouses with inventory data`);
     
-    // Return the array directly (frontend expects InventoryData[])
-    return res.status(200).json({
-      success: true,
-      data: result, // This should be InventoryData[]
-      query: searchQuery,
-      timestamp: new Date().toISOString(),
-      count: result.length
-    });
+    // Return correct format based on query type
+    if (type === 'warehouse' && result.length > 0) {
+      // Frontend expects single warehouse object for .reduce() calls
+      const warehouseData = result[0];
+      return res.status(200).json({
+        success: true,
+        data: {
+          warehouse: warehouseData.warehouse,
+          items: warehouseData.items,
+          totalItems: warehouseData.totalItems,
+          lowStockItems: warehouseData.lowStockItems
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      // Return array format for all_inventory and multiple results
+      return res.status(200).json({
+        success: true,
+        data: result,
+        query: searchQuery,
+        timestamp: new Date().toISOString(),
+        count: result.length
+      });
+    }
     
   } catch (error) {
     console.error('❌ MCP Query Error:', error);

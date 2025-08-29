@@ -1,95 +1,60 @@
 // Vercel Serverless Function for MCP OAuth2 Token Endpoint
 // URL: /api/oauth2/token
-// Implements JWT-bearer grant type with JAG token validation
 
 const crypto = require('crypto');
 
-// MCP Authorization Server Configuration
+// MCP Configuration
 const MCP_CONFIG = {
   clientId: process.env.MCP_SERVER_CLIENT_ID || 'mcp_inventory_server_001',
   clientSecret: process.env.MCP_SERVER_CLIENT_SECRET || 'mcp_server_secret_2024_inventory_access',
   oktaDomain: process.env.OKTA_DOMAIN || 'fcxdemo.okta.com',
-  tokenLifetime: 86400 // 24 hours
+  tokenLifetime: 86400
 };
 
-// In-memory cache for Okta JWKS (in production, use Redis or similar)
-let oktaJwksCache = null;
-let jwksCacheExpiry = 0;
-
-// Helper function to get Okta JWKS for JWT validation
-async function getOktaJwks() {
-  const now = Date.now();
-  
-  // Return cached JWKS if still valid (cache for 1 hour)
-  if (oktaJwksCache && now < jwksCacheExpiry) {
-    return oktaJwksCache;
-  }
-  
+// Simple JWT validation (demo purposes)
+function validateJagToken(jagToken) {
   try {
-    const jwksUrl = `https://${MCP_CONFIG.oktaDomain}/oauth2/v1/keys`;
-    const response = await fetch(jwksUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch JWKS: ${response.statusText}`);
-    }
-    
-    oktaJwksCache = await response.json();
-    jwksCacheExpiry = now + (60 * 60 * 1000); // Cache for 1 hour
-    
-    return oktaJwksCache;
-  } catch (error) {
-    console.error('Error fetching Okta JWKS:', error);
-    throw new Error('Unable to validate JWT - JWKS fetch failed');
-  }
-}
-
-// Helper function to validate JAG JWT token (simplified for Vercel compatibility)
-async function validateJagToken(jagToken) {
-  try {
-    // Basic JWT format validation
     const parts = jagToken.split('.');
     if (parts.length !== 3) {
-      throw new Error('Invalid JWT format - must have 3 parts');
+      throw new Error('Invalid JWT format');
     }
     
-    // Decode payload (skip signature verification for demo)
     const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
     
-    // Basic payload validation
     if (!payload.sub || !payload.iss) {
-      throw new Error('Invalid JWT payload - missing required claims');
+      throw new Error('Invalid JWT payload');
     }
     
-    // Check issuer (basic validation)
     if (!payload.iss.includes(MCP_CONFIG.oktaDomain)) {
-      throw new Error(`Invalid issuer: ${payload.iss}`);
+      throw new Error('Invalid issuer');
     }
     
-    // Check expiration
     if (payload.exp && payload.exp < (Date.now() / 1000)) {
-      throw new Error('JWT token has expired');
+      throw new Error('JWT token expired');
     }
-    
-    console.log(`✅ JAG token validated for subject: ${payload.sub}`);
-    console.log(`📋 Token issuer: ${payload.iss}`);
     
     return payload;
-    
   } catch (error) {
-    console.error('JAG token validation failed:', error);
-    throw new Error(`JWT validation failed: ${error.message}`);
+    throw new Error('JWT validation failed: ' + error.message);
   }
 }
 
-// Validate Basic Auth credentials
+// Validate Basic Auth
 function validateBasicAuth(authHeader) {
   if (!authHeader || !authHeader.startsWith('Basic ')) {
-    throw new Error('Client authentication required');
+    throw new Error('Basic authentication required');
   }
   
   const base64Credentials = authHeader.replace('Basic ', '');
   const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
-  const [clientId, clientSecret] = credentials.split(':');
+  const parts = credentials.split(':');
+  
+  if (parts.length !== 2) {
+    throw new Error('Invalid Basic auth format');
+  }
+  
+  const clientId = parts[0];
+  const clientSecret = parts[1];
   
   if (clientId !== MCP_CONFIG.clientId || clientSecret !== MCP_CONFIG.clientSecret) {
     throw new Error('Invalid client credentials');
@@ -99,12 +64,10 @@ function validateBasicAuth(authHeader) {
 }
 
 module.exports = async function handler(req, res) {
-  // Enable CORS
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  // Set OAuth cache control headers
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Pragma', 'no-cache');
   
@@ -115,47 +78,46 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({
       error: 'method_not_allowed',
-      error_description: 'Only POST method is supported'
+      error_description: 'Only POST method supported'
     });
   }
 
   try {
-    console.log('🔐 MCP OAuth2 Token Request (Vercel)');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
+    console.log('MCP OAuth2 Token Request');
     
     // Validate client credentials
-    const { clientId, clientSecret } = validateBasicAuth(req.headers.authorization);
+    const credentials = validateBasicAuth(req.headers.authorization);
     
-    const { grant_type, assertion } = req.body;
+    const body = req.body || {};
+    const grantType = body.grant_type;
+    const assertion = body.assertion;
     
     // Validate grant type
-    if (grant_type !== 'urn:ietf:params:oauth:grant-type:jwt-bearer') {
+    if (grantType !== 'urn:ietf:params:oauth:grant-type:jwt-bearer') {
       return res.status(400).json({
         error: 'unsupported_grant_type',
-        error_description: 'Only jwt-bearer grant type is supported'
+        error_description: 'Only jwt-bearer grant type supported'
       });
     }
     
     if (!assertion) {
       return res.status(400).json({
         error: 'invalid_request',
-        error_description: 'assertion parameter is required'
+        error_description: 'assertion parameter required'
       });
     }
     
-    console.log(`✅ Client authenticated: ${clientId}`);
-    console.log(`📋 Grant type: ${grant_type}`);
-    console.log(`🎫 JAG token (assertion): ${assertion.substring(0, 50)}...`);
+    console.log('Client:', credentials.clientId);
+    console.log('Grant type:', grantType);
+    console.log('JAG token length:', assertion.length);
     
-    // Validate the JAG token against Okta
-    const validatedClaims = await validateJagToken(assertion);
+    // Validate JAG token
+    const validatedClaims = validateJagToken(assertion);
     
     // Generate MCP access token
     const accessToken = crypto.randomBytes(32).toString('hex');
     
-    console.log(`🎯 Generated MCP access token: ${accessToken.substring(0, 20)}...`);
-    console.log(`👤 For user: ${validatedClaims.sub}`);
+    console.log('Generated access token for user:', validatedClaims.sub);
     
     return res.status(200).json({
       token_type: 'Bearer',
@@ -166,7 +128,7 @@ module.exports = async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ MCP OAuth Token Error:', error.message);
+    console.error('OAuth Token Error:', error.message);
     
     if (error.message.includes('authentication') || error.message.includes('credentials')) {
       return res.status(401).json({
@@ -175,7 +137,7 @@ module.exports = async function handler(req, res) {
       });
     }
     
-    if (error.message.includes('JWT validation') || error.message.includes('expired')) {
+    if (error.message.includes('JWT') || error.message.includes('expired')) {
       return res.status(401).json({
         error: 'invalid_grant',
         error_description: error.message
@@ -184,7 +146,7 @@ module.exports = async function handler(req, res) {
     
     return res.status(500).json({
       error: 'server_error',
-      error_description: 'Internal server error during token issuance'
+      error_description: 'Internal server error'
     });
   }
-}
+};

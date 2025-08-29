@@ -1,50 +1,62 @@
 # MCP External API - Quick Test Commands
 
 ## Your MCP Server Credentials
+
+**Production (External LLM Access):**
 ```
-Server: http://localhost:5000
+Server: https://your-app.vercel.app
 Client ID: mcp_inventory_server_001
 Client Secret: mcp_server_secret_2024_inventory_access
 Base64 Encoded: $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)
 ```
 
-## Direct cURL Commands (Copy & Paste Ready)
-
-### 1. Test California Warehouse
-```bash
-curl -X POST http://localhost:5000/mcp/external/inventory \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{"query":{"type":"warehouse","filters":{"state":"California"}}}'
+**Local Development:**
+```
+Server: http://localhost:5000
+Client ID: mcp_inventory_server_001
+Client Secret: mcp_server_secret_2024_inventory_access
 ```
 
-### 2. Test All Inventory
+## Production Commands (For External LLMs)
+
+**Important**: External LLMs must use the JWT-bearer flow, not direct endpoints.
+
+### 1. Get Access Token
 ```bash
-curl -X POST http://localhost:5000/mcp/external/inventory \
-  -H "Content-Type: application/json" \
+curl -X POST https://your-app.vercel.app/api/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{"query":{"type":"all_inventory"}}'
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<REAL_JAG_TOKEN>"
 ```
 
-### 3. Test Low Stock Items
+### 2. Test California Warehouse  
 ```bash
-curl -X POST http://localhost:5000/mcp/external/inventory \
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
   -H "Content-Type: application/json" \
-  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{"query":{"type":"low_stock"}}'
+  -H "Authorization: Bearer <ACCESS_TOKEN_FROM_STEP_1>" \
+  -d '{"type":"warehouse","filters":{"state":"California"}}'
+```
+
+### 3. Test All Inventory
+```bash
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <ACCESS_TOKEN_FROM_STEP_1>" \
+  -d '{"type":"all_inventory"}'
 ```
 
 ### 4. Test Texas Warehouse
 ```bash
-curl -X POST http://localhost:5000/mcp/external/inventory \
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
   -H "Content-Type: application/json" \
-  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{"query":{"type":"warehouse","filters":{"state":"Texas"}}}'
+  -H "Authorization: Bearer <ACCESS_TOKEN_FROM_STEP_1>" \
+  -d '{"type":"warehouse","filters":{"state":"Texas"}}'
 ```
 
 ### 5. Get Server Configuration
 ```bash
-curl -X GET http://localhost:5000/mcp/config
+curl -X GET https://your-app.vercel.app/api/config
 ```
 
 ## Expected Response Format

@@ -9,10 +9,11 @@ LLM gets JAG token from Okta → Sends to MCP server → Gets access token → Q
 
 ```bash
 # Step 1: LLM exchanges JAG token for MCP access token
-curl -X POST http://localhost:5000/mcp/external/token \
+curl -X POST https://your-app.vercel.app/api/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=<JAG_TOKEN>"
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<JAG_TOKEN>"
 
 # Response:
 {
@@ -22,7 +23,7 @@ curl -X POST http://localhost:5000/mcp/external/token \
 }
 
 # Step 2: LLM uses access token to query inventory
-curl -X POST http://localhost:5000/mcp/inventory/query \
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -d '{"type": "warehouse", "filters": {"state": "California"}}'
@@ -32,19 +33,16 @@ curl -X POST http://localhost:5000/mcp/inventory/query \
 **Bypass JAG tokens entirely**
 
 ```bash
-# Direct inventory query with Basic Auth
-curl -X POST http://localhost:5000/mcp/external/inventory \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{"query": {"type": "warehouse", "filters": {"state": "California"}}}'
+# Direct inventory query with Basic Auth (not available in current implementation)
+# Use the JWT-bearer flow above instead for external LLM access
 ```
 
 ## Example: External LLM with JAG Token
 
 ### 1. LLM Token Exchange Request
 ```http
-POST /mcp/external/token HTTP/1.1
-Host: localhost:5000
+POST /api/oauth2/token HTTP/1.1
+Host: your-app.vercel.app
 Authorization: Basic bWNwX2ludmVudG9yeV9zZXJ2ZXJfMDAxOm1jcF9zZXJ2ZXJfc2VjcmV0XzIwMjRfaW52ZW50b3J5X2FjY2Vzcw==
 Content-Type: application/x-www-form-urlencoded
 
@@ -62,8 +60,8 @@ grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=eyJhbGciOiJSUzI
 
 ### 3. LLM Inventory Query
 ```http
-POST /mcp/inventory/query HTTP/1.1
-Host: localhost:5000
+POST /api/mcp/inventory/query HTTP/1.1
+Host: your-app.vercel.app
 Authorization: Bearer a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 Content-Type: application/json
 
@@ -140,7 +138,7 @@ def get_mcp_access_token(jag_token):
     credentials = base64.b64encode("mcp_inventory_server_001:mcp_server_secret_2024_inventory_access".encode()).decode()
     
     response = requests.post(
-        "http://localhost:5000/mcp/external/token",
+        "https://your-app.vercel.app/api/oauth2/token",
         headers={
             "Content-Type": "application/x-www-form-urlencoded",
             "Authorization": f"Basic {credentials}"
@@ -159,7 +157,7 @@ def query_inventory(access_token, query_type, filters=None):
         payload["filters"] = filters
     
     response = requests.post(
-        "http://localhost:5000/mcp/inventory/query",
+        "https://your-app.vercel.app/api/mcp/inventory/query",
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {access_token}"
@@ -193,9 +191,10 @@ def mcp_inventory_tool(jag_token, query_type, state=None):
 ## Testing Your Integration
 
 ```bash
-# Test token exchange
-curl -v -X POST http://localhost:5000/mcp/external/token \
+# Test token exchange (replace your-app.vercel.app with your actual Vercel URL)
+curl -v -X POST https://your-app.vercel.app/api/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2ZjeGRlbW8ub2t0YS5jb20iLCJzdWIiOiJ0ZXN0In0.test"
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<REAL_JAG_TOKEN>"
 ```

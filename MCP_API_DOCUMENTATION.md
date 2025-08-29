@@ -6,8 +6,15 @@ The MCP (Model Context Protocol) Server provides secure access to Atlas Beverage
 1. **Frontend Flow**: JAG token → OAuth token → Inventory access (for J.A.R.V.I.S UI)
 2. **External LLM Flow**: Direct Basic Auth → Inventory access (for external systems)
 
-## Base URL
+## Base URLs
+
+**Production (External LLM Access):**
 ```
+https://your-app.vercel.app
+```
+
+**Local Development:**
+```  
 http://localhost:5000
 ```
 
@@ -40,41 +47,29 @@ Authorization: Basic <base64(clientId:clientSecret)>
 }
 ```
 
-**Example cURL Commands**:
+**Important Note**: The `/mcp/external/inventory` endpoint is not available in the current implementation. External LLMs should use the JWT-bearer flow instead.
+
+**Example cURL Commands** (Production URLs for external LLMs):
 
 ```bash
-# Get California warehouse inventory
-curl -X POST http://localhost:5000/mcp/external/inventory \
-  -H "Content-Type: application/json" \
+# Step 1: Exchange JAG token for access token
+curl -X POST https://your-app.vercel.app/api/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{
-    "query": {
-      "type": "warehouse",
-      "filters": {
-        "state": "California"
-      }
-    }
-  }'
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<JAG_TOKEN>"
 
-# Get all inventory across warehouses
-curl -X POST http://localhost:5000/mcp/external/inventory \
+# Step 2: Query California warehouse inventory
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
   -H "Content-Type: application/json" \
-  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{
-    "query": {
-      "type": "all_inventory"
-    }
-  }'
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"type": "warehouse", "filters": {"state": "California"}}'
 
-# Get low stock items
-curl -X POST http://localhost:5000/mcp/external/inventory \
+# Step 2: Get all inventory across warehouses  
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
   -H "Content-Type: application/json" \
-  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d '{
-    "query": {
-      "type": "low_stock"
-    }
-  }'
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -d '{"type": "all_inventory"}'
 ```
 
 **Response Format**:
@@ -110,17 +105,18 @@ curl -X POST http://localhost:5000/mcp/external/inventory \
 
 ### 2. Frontend OAuth Flow (for J.A.R.V.I.S)
 
-**Token Exchange**: `POST /oauth2/token`
+**Token Exchange**: `POST /api/oauth2/token`
 ```bash
-curl -X POST http://localhost:5000/oauth2/token \
+curl -X POST https://your-app.vercel.app/api/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
-  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=<JAG_TOKEN>"
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<JAG_TOKEN>"
 ```
 
-**Inventory Query**: `POST /mcp/inventory/query`
+**Inventory Query**: `POST /api/mcp/inventory/query`
 ```bash
-curl -X POST http://localhost:5000/mcp/inventory/query \
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -d '{"type": "all_inventory"}'
@@ -128,14 +124,14 @@ curl -X POST http://localhost:5000/mcp/inventory/query \
 
 ### 3. Configuration & Health
 
-**Configuration**: `GET /mcp/config`
+**Configuration**: `GET /api/config`
 ```bash
-curl http://localhost:5000/mcp/config
+curl https://your-app.vercel.app/api/config
 ```
 
-**Health Check**: `GET /mcp/health`
+**Health Check**: `GET /api/health`
 ```bash
-curl http://localhost:5000/mcp/health
+curl https://your-app.vercel.app/api/health
 ```
 
 ## Query Types
@@ -188,19 +184,31 @@ client_id = "mcp_inventory_server_001"
 client_secret = "mcp_server_secret_2024_inventory_access"
 credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
-# Query California warehouse
-response = requests.post(
-    "http://localhost:5000/mcp/external/inventory",
+# Step 1: Get access token (external LLM needs JAG token first)
+token_response = requests.post(
+    "https://your-app.vercel.app/api/oauth2/token",
     headers={
-        "Content-Type": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
         "Authorization": f"Basic {credentials}"
     },
+    data={
+        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        "assertion": "<JAG_TOKEN>"  # External LLM must obtain this from Okta
+    }
+)
+access_token = token_response.json()["access_token"]
+
+# Step 2: Query California warehouse
+response = requests.post(
+    "https://your-app.vercel.app/api/mcp/inventory/query",
+    headers={
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}"
+    },
     json={
-        "query": {
-            "type": "warehouse",
-            "filters": {
-                "state": "California"
-            }
+        "type": "warehouse",
+        "filters": {
+            "state": "California"
         }
     }
 )
@@ -217,17 +225,30 @@ const credentials = Buffer.from('mcp_inventory_server_001:mcp_server_secret_2024
 
 async function queryInventory() {
   try {
-    const response = await axios.post(
-      'http://localhost:5000/mcp/external/inventory',
+    // Step 1: Get access token
+    const tokenResponse = await axios.post(
+      'https://your-app.vercel.app/api/oauth2/token',
+      'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=<JAG_TOKEN>',
       {
-        query: {
-          type: 'all_inventory'
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${credentials}`
         }
+      }
+    );
+    
+    const accessToken = tokenResponse.data.access_token;
+    
+    // Step 2: Query inventory
+    const response = await axios.post(
+      'https://your-app.vercel.app/api/mcp/inventory/query',
+      {
+        type: 'all_inventory'
       },
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`
+          'Authorization': `Bearer ${accessToken}`
         }
       }
     );

@@ -52,7 +52,7 @@ export default function ChatInterface() {
   const queryClient = useQueryClient();
 
   const { data: inventoryData, error: inventoryError, isLoading: inventoryLoading } = useQuery<InventoryData[]>({
-    queryKey: ["/mcp/inventory/query"],
+    queryKey: ["/api/mcp/inventory/query"],
     enabled: false, // Disable auto-fetching to prevent showing all warehouses
     queryFn: async () => {
       console.log('=== Frontend: Fetching inventory data ===');
@@ -60,7 +60,7 @@ export default function ChatInterface() {
       console.log('Application token available:', !!applicationToken);
       
       try {
-        const response = await fetch('/mcp/inventory/query', {
+        const response = await fetch('/api/mcp/inventory/query', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -146,7 +146,7 @@ export default function ChatInterface() {
       const mcpClientSecret = 'mcp_server_secret_2024_inventory_access';
       const basicAuth = btoa(`${mcpClientId}:${mcpClientSecret}`);
       
-      const response = await fetch('/oauth2/token', {
+      const response = await fetch('/api/oauth2/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -198,7 +198,7 @@ export default function ChatInterface() {
             const applicationToken = localStorage.getItem('application_token');
             console.log('Making pending warehouse request for state:', pendingState);
             
-            const response = await fetch('/mcp/inventory/query', {
+            const response = await fetch('/api/mcp/inventory/query', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -425,7 +425,7 @@ export default function ChatInterface() {
             console.log('Making warehouse request for state:', state);
             console.log('Application token available:', !!applicationToken);
             
-            const response = await fetch('/mcp/inventory/query', {
+            const response = await fetch('/api/mcp/inventory/query', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

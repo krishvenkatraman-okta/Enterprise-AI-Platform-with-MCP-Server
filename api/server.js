@@ -522,25 +522,35 @@ const handleMcpInventoryQuery = (req, res) => {
     const token = authHeader.replace('Bearer ', '');
     console.log('🔑 Token:', token.substring(0, 20) + '...');
     
-    const query = req.body?.query || req.query?.query || '';
-    console.log('🔍 Query:', query);
+    // Handle both old format (type/filters) and new format (query)
+    const { type, filters, query } = req.body;
+    const searchQuery = query || '';
+    
+    console.log('🔍 Query:', searchQuery);
+    console.log('🔍 Type:', type);
+    console.log('🔍 Filters:', filters);
     
     // Get all warehouses
     let warehouses = Array.from(storage.warehouses.values());
     
-    // Filter warehouses based on query
-    if (query.toLowerCase().includes('california') || query.toLowerCase().includes('west coast')) {
-      warehouses = warehouses.filter(w => w.state === 'California');
-      console.log('📦 Filtering for California warehouses');
-    } else if (query.toLowerCase().includes('texas') || query.toLowerCase().includes('central')) {
-      warehouses = warehouses.filter(w => w.state === 'Texas');
-      console.log('📦 Filtering for Texas warehouses');
-    } else if (query.toLowerCase().includes('nevada') || query.toLowerCase().includes('mountain')) {
-      warehouses = warehouses.filter(w => w.state === 'Nevada');
-      console.log('📦 Filtering for Nevada warehouses');
+    // Filter warehouses based on query OR type/filters
+    if (searchQuery) {
+      if (searchQuery.toLowerCase().includes('california') || searchQuery.toLowerCase().includes('west coast')) {
+        warehouses = warehouses.filter(w => w.state === 'California');
+        console.log('📦 Filtering for California warehouses (query)');
+      } else if (searchQuery.toLowerCase().includes('texas') || searchQuery.toLowerCase().includes('central')) {
+        warehouses = warehouses.filter(w => w.state === 'Texas');  
+        console.log('📦 Filtering for Texas warehouses (query)');
+      } else if (searchQuery.toLowerCase().includes('nevada') || searchQuery.toLowerCase().includes('mountain')) {
+        warehouses = warehouses.filter(w => w.state === 'Nevada');
+        console.log('📦 Filtering for Nevada warehouses (query)');
+      }
+    } else if (type === 'warehouse' && filters?.state) {
+      warehouses = warehouses.filter(w => w.state === filters.state);
+      console.log(`📦 Filtering for warehouse state: ${filters.state} (type)`);
     }
     
-    // Build response with items - match frontend InventoryData interface
+    // Build response - match InventoryData interface
     const result = warehouses.map(warehouse => {
       const items = Array.from(storage.inventoryItems.values())
         .filter(item => item.warehouseId === warehouse.id);
@@ -557,7 +567,7 @@ const handleMcpInventoryQuery = (req, res) => {
         items: items.map(item => ({
           id: item.id,
           name: item.name,
-          sku: item.id,  // Use id as sku for demo
+          sku: item.id,
           category: item.category,
           quantity: item.quantity,
           minStockLevel: item.minStock,
@@ -576,10 +586,11 @@ const handleMcpInventoryQuery = (req, res) => {
     
     console.log(`✅ Returning ${result.length} warehouses with inventory data`);
     
+    // Return the array directly (frontend expects InventoryData[])
     return res.status(200).json({
       success: true,
-      data: result,
-      query: query,
+      data: result, // This should be InventoryData[]
+      query: searchQuery,
       timestamp: new Date().toISOString(),
       count: result.length
     });

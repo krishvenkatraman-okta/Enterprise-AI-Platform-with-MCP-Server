@@ -220,47 +220,80 @@ npm start
 
 ## 🧪 **Testing the Integration**
 
-### **Test MCP Health**
+### **Test MCP Health** 🩺
+**Production (Vercel):**
 ```bash
-curl http://localhost:5000/mcp/health | jq .
+curl https://your-app.vercel.app/api/health | jq .
+```
+
+**Local Development:**
+```bash
+curl http://localhost:5000/api/health | jq .
 ```
 
 ### **Test OAuth2 Token Exchange** 🔐
+
+**Production (Vercel):**
 ```bash
-# Step 1: Get MCP access token using JAG
+# Step 1: Get MCP access token using JAG (Production)
+curl -X POST https://your-app.vercel.app/api/oauth2/token \
+  -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+  -d "assertion=<REAL_JAG_TOKEN_FROM_JARVIS>"
+```
+
+**Local Development:**
+```bash
+# Step 1: Get MCP access token using JAG (Local)
 curl -X POST http://localhost:5000/api/oauth2/token \
   -H "Authorization: Basic $(echo -n 'mcp_inventory_server_001:mcp_server_secret_2024_inventory_access' | base64)" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
   -d "assertion=<REAL_JAG_TOKEN_FROM_JARVIS>"
+```
 
-# Expected response:
-# {
-#   "token_type": "Bearer",
-#   "access_token": "abc123def456...",
-#   "expires_in": 86400,
-#   "scope": "inventory:read"
-# }
+**Expected response (both environments):**
+```json
+{
+  "token_type": "Bearer",
+  "access_token": "abc123def456...",
+  "expires_in": 86400,
+  "scope": "inventory:read"
+}
 ```
 
 ### **Test Inventory Query** 📊
+
+**Production (Vercel):**
 ```bash
-# Step 2: Query California warehouse
+# Step 2: Query California warehouse (Production)
+curl -X POST https://your-app.vercel.app/api/mcp/inventory/query \
+  -H "Authorization: Bearer <ACCESS_TOKEN_FROM_STEP_1>" \
+  -H "Content-Type: application/json" \
+  -d '{"type": "warehouse", "filters": {"state": "California"}}'
+```
+
+**Local Development:**
+```bash
+# Step 2: Query California warehouse (Local)
 curl -X POST http://localhost:5000/api/mcp/inventory/query \
   -H "Authorization: Bearer <ACCESS_TOKEN_FROM_STEP_1>" \
   -H "Content-Type: application/json" \
   -d '{"type": "warehouse", "filters": {"state": "California"}}'
+```
 
-# Expected response:
-# {
-#   "success": true,
-#   "data": {
-#     "warehouse": {"id": "warehouse-ca-001", "name": "West Coast Distribution"},
-#     "items": [...],
-#     "totalItems": 5,
-#     "lowStockItems": [...]
-#   }
-# }
+**Expected response (both environments):**
+```json
+{
+  "success": true,
+  "data": {
+    "warehouse": {"id": "warehouse-ca-001", "name": "West Coast Distribution"},
+    "items": [...],
+    "totalItems": 5,
+    "lowStockItems": [...]
+  }
+}
 ```
 
 ## 📚 **Documentation**

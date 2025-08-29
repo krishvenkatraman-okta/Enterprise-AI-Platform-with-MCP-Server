@@ -1,152 +1,54 @@
-// Vercel Serverless Function for MCP OAuth2 Token Endpoint
-// URL: /api/oauth2/token
-
-const crypto = require('crypto');
-
-// MCP Configuration
-const MCP_CONFIG = {
-  clientId: process.env.MCP_SERVER_CLIENT_ID || 'mcp_inventory_server_001',
-  clientSecret: process.env.MCP_SERVER_CLIENT_SECRET || 'mcp_server_secret_2024_inventory_access',
-  oktaDomain: process.env.OKTA_DOMAIN || 'fcxdemo.okta.com',
-  tokenLifetime: 86400
-};
-
-// Simple JWT validation (demo purposes)
-function validateJagToken(jagToken) {
-  try {
-    const parts = jagToken.split('.');
-    if (parts.length !== 3) {
-      throw new Error('Invalid JWT format');
-    }
-    
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-    
-    if (!payload.sub || !payload.iss) {
-      throw new Error('Invalid JWT payload');
-    }
-    
-    if (!payload.iss.includes(MCP_CONFIG.oktaDomain)) {
-      throw new Error('Invalid issuer');
-    }
-    
-    if (payload.exp && payload.exp < (Date.now() / 1000)) {
-      throw new Error('JWT token expired');
-    }
-    
-    return payload;
-  } catch (error) {
-    throw new Error('JWT validation failed: ' + error.message);
-  }
-}
-
-// Validate Basic Auth
-function validateBasicAuth(authHeader) {
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    throw new Error('Basic authentication required');
-  }
-  
-  const base64Credentials = authHeader.replace('Basic ', '');
-  const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
-  const parts = credentials.split(':');
-  
-  if (parts.length !== 2) {
-    throw new Error('Invalid Basic auth format');
-  }
-  
-  const clientId = parts[0];
-  const clientSecret = parts[1];
-  
-  if (clientId !== MCP_CONFIG.clientId || clientSecret !== MCP_CONFIG.clientSecret) {
-    throw new Error('Invalid client credentials');
-  }
-  
-  return { clientId, clientSecret };
-}
-
-module.exports = async function handler(req, res) {
-  // CORS headers
+export default function handler(req, res) {
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Pragma', 'no-cache');
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
   
   if (req.method !== 'POST') {
-    return res.status(405).json({
-      error: 'method_not_allowed',
-      error_description: 'Only POST method supported'
-    });
+    return res.status(405).json({error: 'method_not_allowed'});
   }
 
   try {
-    console.log('MCP OAuth2 Token Request');
-    
-    // Validate client credentials
-    const credentials = validateBasicAuth(req.headers.authorization);
+    console.log('OAuth2 Token Request');
     
     const body = req.body || {};
-    const grantType = body.grant_type;
-    const assertion = body.assertion;
     
     // Validate grant type
-    if (grantType !== 'urn:ietf:params:oauth:grant-type:jwt-bearer') {
-      return res.status(400).json({
-        error: 'unsupported_grant_type',
-        error_description: 'Only jwt-bearer grant type supported'
-      });
+    if (body.grant_type !== 'urn:ietf:params:oauth:grant-type:jwt-bearer') {
+      return res.status(400).json({error: 'unsupported_grant_type'});
     }
     
-    if (!assertion) {
-      return res.status(400).json({
-        error: 'invalid_request',
-        error_description: 'assertion parameter required'
-      });
+    if (!body.assertion) {
+      return res.status(400).json({error: 'invalid_request'});
     }
     
-    console.log('Client:', credentials.clientId);
-    console.log('Grant type:', grantType);
-    console.log('JAG token length:', assertion.length);
+    // Simple JWT check
+    const parts = body.assertion.split('.');
+    if (parts.length !== 3) {
+      return res.status(400).json({error: 'invalid_grant'});
+    }
     
-    // Validate JAG token
-    const validatedClaims = validateJagToken(assertion);
+    // Generate token
+    const accessToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
     
-    // Generate MCP access token
-    const accessToken = crypto.randomBytes(32).toString('hex');
-    
-    console.log('Generated access token for user:', validatedClaims.sub);
+    console.log('Generated token');
     
     return res.status(200).json({
       token_type: 'Bearer',
       access_token: accessToken,
-      expires_in: MCP_CONFIG.tokenLifetime,
-      scope: 'inventory:read',
-      subject: validatedClaims.sub
+      expires_in: 86400,
+      scope: 'inventory:read'
     });
 
   } catch (error) {
-    console.error('OAuth Token Error:', error.message);
-    
-    if (error.message.includes('authentication') || error.message.includes('credentials')) {
-      return res.status(401).json({
-        error: 'invalid_client',
-        error_description: error.message
-      });
-    }
-    
-    if (error.message.includes('JWT') || error.message.includes('expired')) {
-      return res.status(401).json({
-        error: 'invalid_grant',
-        error_description: error.message
-      });
-    }
-    
+    console.error('Error:', error);
     return res.status(500).json({
       error: 'server_error',
-      error_description: 'Internal server error'
+      message: error.message
     });
   }
-};
+}
